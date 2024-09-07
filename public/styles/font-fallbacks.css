@@ -1,0 +1,34 @@
+@font-face {
+  font-family: "Alegreya Fallback: Arial";
+  src: local('Arial'), local('ArialMT');
+  font-display: swap;
+  ascent-override: 70.6605%;
+  descent-override: 23.994%;
+  line-gap-override: 0%;
+  size-adjust: 143.7862%;
+}
+@font-face {
+  font-family: "Alegreya Fallback: Roboto";
+  src: local('Roboto'), local('Roboto-Regular');
+  font-display: swap;
+  ascent-override: 70.5057%;
+  descent-override: 23.9414%;
+  size-adjust: 144.1019%;
+}@font-face {
+  font-family: "Permanent Marker Fallback: Arial";
+  src: local('Arial'), local('ArialMT');
+  font-display: swap;
+  ascent-override: 97.578%;
+  descent-override: 27.9162%;
+  line-gap-override: 2.6628%;
+  size-adjust: 113.6911%;
+}
+@font-face {
+  font-family: "Permanent Marker Fallback: Roboto";
+  src: local('Roboto'), local('Roboto-Regular');
+  font-display: swap;
+  ascent-override: 97.3642%;
+  descent-override: 27.8551%;
+  line-gap-override: 2.6569%;
+  size-adjust: 113.9407%;
+}

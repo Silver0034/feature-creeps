@@ -3,15 +3,28 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro check && astro build",
+    "build:fonts": "node ./scripts/font-fallbacks.js",
+    "dev": "npm run build:fonts && astro dev",
+    "start": "npm run build:fonts && astro dev",
+    "build": "npm run build:fonts && astro check && astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^4.15.4",
     "@astrojs/check": "^0.9.3",
+    "@astrojs/node": "^8.3.3",
+    "@capsizecss/core": "^4.1.2",
+    "@capsizecss/metrics": "^3.2.0",
+    "@capsizecss/unpack": "^2.2.0",
+    "@fontsource/alegreya": "^5.0.14",
+    "@fontsource/permanent-marker": "^5.0.13",
+    "@mlc-ai/web-llm": "^0.2.62",
+    "astro": "^4.15.4",
+    "json": "^11.0.0",
+    "qrcode-svg": "^1.1.0",
     "typescript": "^5.5.4"
+  },
+  "devDependencies": {
+    "sass": "^1.77.8"
   }
 }

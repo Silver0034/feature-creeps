@@ -1,0 +1,16 @@
+---
+import DefaultLayout from '@layouts/default.astro'
+
+const { title } = Astro.props
+---
+
+<style is:global>
+	body {
+		background-color: blue;
+	}
+</style>
+
+<DefaultLayout title={title}>
+	<h1>Client Layout</h1>
+	<slot />
+</DefaultLayout>

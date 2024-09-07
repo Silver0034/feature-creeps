@@ -1,0 +1,33 @@
+---
+import '@fontsource/alegreya'
+import '@fontsource/permanent-marker'
+import SkipLink from '@components/SkipLink.astro'
+import '@styles/main.scss'
+
+const { title } = Astro.props
+---
+
+<html lang='en'>
+	<head>
+		<slot name='head-start' />
+		<meta charset='utf-8' />
+		<meta name='viewport' content='width=device-width, initial-scale=1' />
+		<meta name='generator' content={Astro.generator} />
+		<title>{title}</title>
+		<slot name='head-end' />
+	</head>
+	<body>
+		<SkipLink id='content' text='Skip to content' />
+		<slot name='body-start' />
+
+		<slot name='header' />
+
+		<main id='content'>
+			<slot />
+		</main>
+
+		<slot name='footer' />
+
+		<slot name='body-end' />
+	</body>
+</html>

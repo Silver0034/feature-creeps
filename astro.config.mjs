@@ -1,5 +1,17 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
+import node from '@astrojs/node';
+
 // https://astro.build/config
-export default defineConfig({});
+export default defineConfig({
+  output: 'hybrid',
+  adapter: node({
+    mode: 'standalone'
+  }),
+  vite: {
+    define: {
+      __SITE__: JSON.stringify('https://localhost:4321')
+    }
+  }
+});
