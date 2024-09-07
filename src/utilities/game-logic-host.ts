@@ -1,70 +1,21 @@
 import { CharacterSheet } from '@utilities/character-sheet.ts'
 import { GameState, state, saveGame, loadGame } from '@utilities/state.ts'
-
-const players: CharacterSheet[] = []
-
-function is_helpful_ability(
-	character: CharacterSheet,
-	ability: string
-): boolean {
-	// TODO: Implement the logic for determining if the ability is helpful for the player.
-	return true
-}
-
-function balance_ability(
-	character: CharacterSheet,
-	ability: string,
-	isStrength: boolean
-): string {
-	// TODO: Implement the logic for balancing the ability based on player's strengths or weaknesses.
-	return ability
-}
-
-function generate_class(player: CharacterSheet): string {
-	// TODO: Implement the logic for generating the class for the player.
-	return ''
-}
-
-function validate_ability(
-	character: CharacterSheet,
-	ability: string
-): string | null {
-	// TODO: Implement the logic for validating the ability.
-	return null
-}
-
-function combat(
-	c1: CharacterSheet,
-	c2: CharacterSheet
-): [CharacterSheet, string] {
-	// TODO: Implement the logic for combat between two characters.
-	return [c1, ""]
-}
-
-function generate_enemy(round: number): CharacterSheet {
-	// TODO: Implement the logic for generating the enemy for the given round.
-	return new CharacterSheet('Paul')
-}
-
-function battle_royale(players: CharacterSheet[]): [CharacterSheet, string] {
-	// TODO: Implement the logic for battle royale between players.
-	return [players[0], '']
-}
+import * as prompts from "@utilities/prompts.ts"
 
 function add_ability(character: CharacterSheet, ability: string): boolean {
 	let new_strength = ''
 	let new_weakness = ''
-	if (is_helpful_ability(character, ability)) {
+	if (prompts.IsStrength(character, ability)) {
 		new_strength = ability
-		new_weakness = balance_ability(character, new_strength, true)
+		new_weakness = prompts.BalanceAbility(character, new_strength, true)
 	} else {
 		new_weakness = ability
-		new_strength = balance_ability(character, new_weakness, false)
+		new_strength = prompts.BalanceAbility(character, new_weakness, false)
 	}
 	character.strengths.push(new_strength)
 	character.weaknesses.push(new_weakness)
 	character.level += 1
-	character.className = generate_class(character)
+	character.className = prompts.GenerateClass(character)
 	return true
 }
 
@@ -118,7 +69,7 @@ function run_round(round: number): void {
 	// TODO: Completely refactor this to instead prompt clients to enter abilities.
 	console.log(`Begin round ${round + 1}`)
 	// TODO: Pre-generate and cache these?
-	const enemy = generate_enemy(round + 1)
+	const enemy = prompts.GenerateEnemy(round + 1)
 	console.log(enemy)
 	for (const player of state.players) {
 		while (true) {
@@ -127,7 +78,7 @@ function run_round(round: number): void {
 			const ability = prompt(
 				`Level up! Enter a new ability for ${player.name}: `
 			) as string
-			const validationError = validate_ability(player, ability)
+			const validationError = prompts.ValidateAbility(player, ability)
 			if (validationError === null) {
 				add_ability(player, ability)
 				break
@@ -141,7 +92,7 @@ function run_round(round: number): void {
 	// The face-off.
 	for (const player of state.players) {
 		console.log(`${player.name} is about to face ${enemy.name}!`)
-		const [winner, combat_description] = combat(player, enemy)
+		const [winner, combat_description] = prompts.Combat(player, enemy)
 		console.log(combat_description)
 		console.log(`${winner.name} wins this round!`)
 		winner.wins += 1
@@ -164,7 +115,7 @@ function run_pvp_pairs(): void {
 
 	for (const [p1, p2] of pairs) {
 		console.log(`${p1.name} is about to face ${p2.name}!`)
-		const [winner, combat_description] = combat(p1, p2)
+		const [winner, combat_description] = prompts.Combat(p1, p2)
 		console.log(combat_description)
 		console.log(`${winner.name} wins this round!`)
 	}
@@ -173,7 +124,7 @@ function run_pvp_pairs(): void {
 function run_pvp_br(): void {
 	console.log('Bonus round! Begin PvP!')
 	state.players.sort(() => Math.random() - 0.5)
-	const [winner, combat_description] = battle_royale(state.players)
+	const [winner, combat_description] = prompts.BattleRoyale(state.players)
 	console.log(combat_description)
 	console.log(`${winner.name} wins the final conflict!`)
 }

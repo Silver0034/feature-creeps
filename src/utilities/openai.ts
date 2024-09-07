@@ -1,31 +1,29 @@
+import { state } from "@utilities/state"
 import * as webllm from "@mlc-ai/web-llm";
+import OpenAI from 'openai';
 import { CreateMLCEngine } from "@mlc-ai/web-llm";
 
-export const prerender = false;
+let client: any;
 
-// Callback function to update model loading progress
-const initProgressCallback = (initProgress) => {
+if (state.inference.engine === "local") {
+  const initProgressCallback = (initProgress) => {
     console.log(initProgress);
-}
-const selectedModel = "Llama-3.1-8B-Instruct-q4f32_1-MLC";
-
-const engine = await CreateMLCEngine(
-    selectedModel,
-  { initProgressCallback: initProgressCallback }, // engineConfig
-);
-
-var messages = [
-    { role: "system", content: "You are a helpful AI assistant." },
-    { role: "user", content: "Hello!" },
-]
-
-export async function SendMessage(message: string) {
-  messages.push({role: "user", content: message})
-  const reply = await engine.chat.completions.create({
-    messages,
+  }
+  client = await CreateMLCEngine(
+    state.inference.modelName || "Llama-3.1-8B-Instruct-q4f32_1-MLC",
+    { initProgressCallback: initProgressCallback }, // engineConfig
+  );
+} else if (state.inference.engine == "API") {
+  client = new OpenAI({
+    baseURL: state.inference.apiURL,
+    apiKey: state.inference.apiKey || "sk-no-key-required",
+    dangerouslyAllowBrowser: true,
   });
-  console.log(reply.choices[0].message);
-  console.log(reply.usage);
+} else {
+  throw new Error('No engine type selected. Cannot perform inference.');
 }
 
-SendMessage("Hello!")
+export { client }
+
+// TODO: Conversion of CharacterSheets to/from JSON seems broken.
+// TODO: Local models are returning garbage.

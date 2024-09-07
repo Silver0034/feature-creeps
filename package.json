@@ -20,7 +20,7 @@
     "@fontsource/permanent-marker": "^5.0.13",
     "@mlc-ai/web-llm": "^0.2.62",
     "astro": "^4.15.4",
-    "json": "^11.0.0",
+    "openai": "^4.58.1",
     "qrcode-svg": "^1.1.0",
     "typescript": "^5.5.4"
   },
