@@ -52,45 +52,61 @@
 				"Follows a rigid code of ethics, avoiding dirty paths to victory",
 			],
 		});
-		let result: any = null;
+		// TODO: Really terrible things happen when different prompts are called one after the other locally. Figure out why.
+		// try {
+		// 	const result: any = await BattleRoyale([vorlok, microwave, alastor]);
+		// 	console.log(JSON.stringify(result, null, 2));
+		// } catch (error) {
+		// 	console.error("Error generating text:", error);
+		// }
+
+		// try {
+		// 	const result: any = await IsStrength(vorlok, ability);
+		// 	console.log(result);
+		// } catch (error) {
+		// 	console.error("Error generating text:", error);
+		// }
+		// try {
+		// 	const result: any = await BalanceAbility(vorlok, ability, true);
+		// 	console.log(result);
+		// } catch (error) {
+		// 	console.error("Error generating text:", error);
+		// }
+		
+		// try {
+		// 	const result: any = await GenerateClass(vorlok);
+		// 	console.log(result);
+		// } catch (error) {
+		// 	console.error("Error generating text:", error);
+		// }
+		// try {
+		// 	const result: any = await GenerateClass(microwave);
+		// 	console.log(result);
+		// } catch (error) {
+		// 	console.error("Error generating text:", error);
+		// }
+		// try {
+		// 	const result: any = await GenerateClass(alastor);
+		// 	console.log(result);
+		// } catch (error) {
+		// 	console.error("Error generating text:", error);
+		// }
+
+		// try {
+		// 	const result: any = await ValidateAbility(vorlok, ability);
+		// 	console.log(result);
+		// } catch (error) {
+		// 	console.error("Error generating text:", error);
+		// }
+		// try {
+		// 	const result: any = await Combat(vorlok, microwave);
+		// 	console.log(JSON.stringify(result, null, 2));
+		// } catch (error) {
+		// 	console.error("Error generating text:", error);
+		// }
+
 		try {
-			result = await IsStrength(vorlok, ability);
-			console.log(result);
-		} catch (error) {
-			console.error("Error generating text:", error);
-		}
-		try {
-			result = await BalanceAbility(vorlok, ability, true);
-			console.log(result);
-		} catch (error) {
-			console.error("Error generating text:", error);
-		}
-		try {
-			result = await GenerateClass(vorlok);
-			console.log(result);
-		} catch (error) {
-			console.error("Error generating text:", error);
-		}
-		try {
-			result = await ValidateAbility(vorlok, ability);
-			console.log(result);
-		} catch (error) {
-			console.error("Error generating text:", error);
-		}
-		try {
-			result = await Combat(vorlok, microwave);
-			console.log(JSON.stringify(result, null, 2));
-		} catch (error) {
-			console.error("Error generating text:", error);
-		}
-		try {
-			result = await GenerateEnemy(3);
-			console.log(JSON.stringify(result, null, 2));
-		} catch (error) {
-			console.error("Error generating text:", error);
-		}
-		try {
-			result = await BattleRoyale([vorlok, microwave, alastor]);
+			const result: any = await GenerateEnemy(3);
 			console.log(JSON.stringify(result, null, 2));
 		} catch (error) {
 			console.error("Error generating text:", error);

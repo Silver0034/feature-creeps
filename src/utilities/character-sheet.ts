@@ -1,3 +1,5 @@
+import { state} from "@utilities/state"
+
 export interface CharacterSheetData {
 	name: string
 	className: string
@@ -5,7 +7,6 @@ export interface CharacterSheetData {
 	strengths: string[]
 	weaknesses: string[]
 	wins?: number
-	pvpWins?: number
 }
 
 export class CharacterSheet {
@@ -35,24 +36,47 @@ Weaknesses:
 ${weaknessesStr}`
 	}
 
-	static getSchema(level: number): object {
-		return {
-			properties: {
-				name: { type: 'string' },
-				className: { type: 'string' },
-				level: { const: level },
-				strengths: {
-					type: 'array',
-					items: { type: 'string' },
-					minItems: 1
+	static getSchema(level: number): object | string {
+		// NOTE: The local inference engine only supports a subset of the required schema features. As a result, we cannot use minItems or const. This may generate slightly different character sheets than we want.
+		if(state.inference.engine === "local") {
+			return `{
+				"properties": {
+					"name": { "type": "string" },
+					"className": { "type": "string"},
+					"level": {"type": "integer"},
+					"strengths": {
+						"type": "array",
+						"items": {"type": "string"}
+					},
+					"weaknesses": {
+						"type": "array",
+						"items": {"type": "string"}
+					}
 				},
-				weaknesses: {
-					type: 'array',
-					items: { type: 'string' },
-					minItems: 1
-				}
-			},
-			required: ['name', 'className', 'level', 'strengths', 'weaknesses']
+				"required": ["name", "className", "level", "strengths", "weaknesses"],
+				"type": "object"
+			}`
+		}
+		else {
+			return {
+				properties: {
+					name: { type: 'string' },
+					className: { type: 'string' },
+					level: { const: level },
+					// level: { type: 'integer' },
+					strengths: {
+						type: 'array',
+						items: { type: 'string' },
+						minItems: 1
+					},
+					weaknesses: {
+						type: 'array',
+						items: { type: 'string' },
+						minItems: 1
+					}
+				},
+				required: ['name', 'className', 'level', 'strengths', 'weaknesses']
+			}
 		}
 	}
 
@@ -63,7 +87,6 @@ ${weaknessesStr}`
 		// Remove private fields
 		if (hideWins) {
 			delete copy.wins
-			delete copy.pvpWins
 		}
 
 		// Return the JSON string
@@ -71,8 +94,14 @@ ${weaknessesStr}`
 	}
 
 	static fromJSON(json: string): CharacterSheet {
-		const { name, className, level, strengths, weaknesses, wins, pvpWins } =
-			JSON.parse(json)
+		const parsedJson = JSON.parse(json);
+		
+		// Extract required properties
+		const { name, className, level, strengths, weaknesses } = parsedJson;
+	
+		// Handle optional properties with default values
+		const wins = parsedJson.wins ?? 0;
+	
 		return new CharacterSheet(
 			name,
 			className,
@@ -80,6 +109,7 @@ ${weaknessesStr}`
 			strengths,
 			weaknesses,
 			wins,
-		)
+		);
 	}
+	
 }

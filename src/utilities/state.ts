@@ -43,17 +43,6 @@ export let state: State = {
 	enemies: [] as CharacterSheet[]
 }
 
-// DEBUG: Set default values here.
-// state.inference.engine = "API"
-// state.inference.modelName = "llama3.1:70b-instruct-q4_K_S"
-// state.inference.apiURL = "http://192.168.0.12:8080/v1"
-// state.inference.apiKey = "sk-no-key-required"
-state.inference.engine = "local"
-state.inference.modelName = "Phi-3.5-mini-instruct-q4f16_1-MLC"
-// state.inference.modelName = "Llama-3.1-8B-Instruct-q4f32_1-MLC"
-// The beefiest model available via MLC. Too big for most GPUs.
-// state.inference.modelName = "Llama-3.1-70B-Instruct-q4f16_1-MLC"
-
 export function saveGame(): void {
 	console.log('Saving game.')
 	// TODO: How do I pass along the requirement to store players wins in the save?
@@ -76,3 +65,19 @@ export function loadGame(): boolean {
 		return false
 	}
 }
+
+export function wipeGame(): void {
+	localStorage.removeItem('gameSave')
+}
+
+// DEBUG: Set temporary default values here.
+state.inference.engine = "API"
+state.inference.apiURL = "http://192.168.0.12:8080/v1"
+// state.inference.modelName = "llama3.1:70b-instruct-q4_K_S"
+state.inference.modelName = "Phi-3-mini-4k-instruct-fp16"
+
+// state.inference.engine = "local"
+// Tested and known working model. No gibberish.
+// state.inference.modelName = "Llama-3.1-8B-Instruct-q4f32_1-MLC"
+// This model occasionally spouts garbage symbols. It would likely benefit from a low temperature.
+// state.inference.modelName = "Phi-3.5-mini-instruct-q4f16_1-MLC"

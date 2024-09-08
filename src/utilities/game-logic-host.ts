@@ -1,5 +1,5 @@
 import { CharacterSheet } from '@utilities/character-sheet.ts'
-import { GameState, state, saveGame, loadGame } from '@utilities/state.ts'
+import { GameState, state, saveGame, loadGame, wipeGame } from '@utilities/state.ts'
 import * as prompts from "@utilities/prompts.ts"
 
 function add_ability(character: CharacterSheet, ability: string): boolean {
@@ -131,9 +131,9 @@ function run_pvp_br(): void {
 
 function main(): void {
 	// TODO: Rework to better accommodate saved state in state.gameState.
-	if (!loadGame()) {
+	// if (!loadGame()) {
 		initialize_game()
-	}
+	// }
 	for (; state.round < state.numRounds; state.round++) {
 		run_round(state.round)
 		saveGame()
@@ -147,6 +147,8 @@ function main(): void {
 	state.gameState = GameState.End
 	console.log('Final character sheets:')
 	print_players()
+	// Wipe the game to avoid getting stuck in the end state.
+	wipeGame()
 }
 
 main()
