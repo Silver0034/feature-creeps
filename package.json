@@ -20,6 +20,8 @@
     "@fontsource/permanent-marker": "^5.0.13",
     "@mlc-ai/web-llm": "^0.2.62",
     "astro": "^4.15.4",
+    "express": "^4.19.2",
+    "https": "^1.0.0",
     "openai": "^4.58.1",
     "qrcode-svg": "^1.1.0",
     "simple-peer": "^9.11.1",

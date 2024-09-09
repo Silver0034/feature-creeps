@@ -2,64 +2,69 @@
 
 ---
 
-<!-- TODO: Functional, but doesn't do what we want yet. --><!-- Based on the basic example here: https://github.com/feross/simple-peer --><!-- Requires some work to ake it more idiomatic with Astro, such as putting it in utilities and calling it from there.. -->
+<!-- TODO: Functional, but doesn't do what we want yet. -->
+<!-- Based on the basic example here: https://github.com/feross/simple-peer -->
+<!-- Requires some work to make it more idiomatic with Astro, such as putting it in utilities and calling it from there.. -->
+
 <style>
-    #outgoing {
-      width: 600px;
-      word-wrap: break-word;
-      white-space: normal;
+  #outgoing {
+    width: 600px;
+    word-wrap: break-word;
+    white-space: normal;
+  }
+</style>
+<form>
+  <textarea id="incoming"></textarea>
+  <button type="submit">submit</button>
+</form>
+<pre id="outgoing"></pre>
+<video src="" id="video"></video>
+<script is:inline src="./node_modules/simple-peer/simplepeer.min.js"></script>
+<script>
+  import { Handshake } from "@utilities/web-socket";
+
+  const p = new SimplePeer({
+    initiator: location.hash === "#1",
+    trickle: false,
+  });
+
+  let i = 1;
+  function sendMsg() {
+    p.send("Message " + i++);
+  }
+  
+  // Set up the WebSocket handshake connection.
+  const handshake: Handshake = new Handshake()
+  function customHandler(event: MessageEvent<string>) {
+    p.signal(JSON.parse(event.data))
+    console.log(`Received message from server: ${event.data}`);
+  }
+  handshake.setHandleMessage(customHandler)
+  handshake.connect()
+
+
+  // Handle errors.
+  p.on("error", (err) => console.log("error", err));
+  // Handle handshakes.
+  p.on("signal", (data) => {
+    console.log("SIGNAL", JSON.stringify(data));
+    handshake.send(JSON.stringify(data))
+  });
+  // Transmit handshakes.
+  document.querySelector("form").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    p.signal(JSON.parse(document.querySelector("#incoming").value));
+  });
+  // Establish connection.
+  p.on("connect", () => {
+    console.log("CONNECT");
+    p.send("whatever" + Math.random());
+    if (location.hash === "#1") {
+      setInterval(sendMsg, 1000);
     }
-  </style>
-  <form>
-    <textarea id="incoming"></textarea>
-    <button type="submit">submit</button>
-  </form>
-  <pre id="outgoing"></pre>
-  <video src="" id="video"></video>
-  <script is:inline src="./node_modules/simple-peer/simplepeer.min.js"></script>
-  <script>
-    navigator.mediaDevices
-      .getUserMedia({
-        video: {
-          facingMode: true,
-        },
-        audio: true,
-      })
-      .then((stream) => {
-        const p = new SimplePeer({
-          initiator: location.hash === "#1",
-          trickle: false,
-          stream,
-        });
-  
-        p.on("error", (err) => console.log("error", err));
-  
-        p.on("signal", (data) => {
-          console.log("SIGNAL", JSON.stringify(data));
-          document.querySelector("#outgoing").textContent = JSON.stringify(data);
-        });
-  
-        document.querySelector("form").addEventListener("submit", (ev) => {
-          ev.preventDefault();
-          p.signal(JSON.parse(document.querySelector("#incoming").value));
-        });
-  
-        p.on("connect", () => {
-          console.log("CONNECT");
-          p.send("whatever" + Math.random());
-        });
-  
-        p.on("data", (data) => {
-          console.log("data: " + data);
-        });
-        p.on("stream", function (stream) {
-          let video = document.getElementById("video");
-          video.srcObject = stream;
-          video.play();
-        });
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  </script>
-  
+  });
+  // Receive data.
+  p.on("data", (data) => {
+    console.log("data: " + data);
+  });
+</script>
