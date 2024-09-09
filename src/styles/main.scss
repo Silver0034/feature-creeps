@@ -1,4 +1,7 @@
+@use 'css-reset';
+@use 'typography';
+
 body {
-    // font-family: 'Permanent Marker', "Permanent Marker Fallback: Arial", "Permanent Marker Fallback: Roboto";
-    font-family: Alegreya, "Alegreya Fallback: Arial", "Alegreya Fallback: Roboto";
+	padding: 0;
+	min-height: 100vh;
 }
