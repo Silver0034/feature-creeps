@@ -1,0 +1,9 @@
+---
+const { view } = Astro.props
+const { key } = view.data
+const { Content } = await view.render()
+---
+
+<article class='view' data-view-key={key}>
+	<Content />
+</article>

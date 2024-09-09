@@ -1,0 +1,58 @@
+---
+import type { CollectionEntry } from 'astro:content'
+interface Props {
+	views: CollectionEntry<'views-client'>[] | CollectionEntry<'views-host'>[]
+}
+const { views } = Astro.props as Props
+---
+
+<style>
+	#debugPanel {
+		position: fixed;
+		bottom: 4em;
+		background-color: lightgray;
+		width: 100%;
+	}
+</style>
+
+<script>
+	import { getGameStateValue, setGameStateValue } from '@utilities/view-logic'
+
+	function refreshView() {
+		const gameState = getGameStateValue()
+
+		const gameStateElement = document.querySelector(
+			'#debugPanel .gameState'
+		) as HTMLElement
+
+		if (gameStateElement) gameStateElement.innerText = gameState.toString()
+	}
+	document.addEventListener('gameStateChange', refreshView)
+	refreshView()
+
+	function handleDebugPanelClick(event: Event) {
+		const target = event.target as HTMLElement
+		if (!target) return
+
+		const debugPanel = target.closest('#debugPanel')
+		if (!debugPanel) return
+
+		const state = target.getAttribute('data-state')
+		if (state) setGameStateValue(parseInt(state))
+	}
+	document.addEventListener('click', handleDebugPanelClick)
+</script>
+
+<section id='debugPanel'>
+	<p>
+		<strong>Debug Panel:</strong> Current game state: <span
+			class='gameState'>0</span
+		>
+	</p>
+	{
+		views.map((view: { data: { title: any; key: any } }) => {
+			const { title, key } = view.data
+			return <button data-state={key}>{title}</button>
+		})
+	}
+</section>

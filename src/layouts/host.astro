@@ -4,13 +4,12 @@ import DefaultLayout from '@layouts/default.astro'
 const { title } = Astro.props
 ---
 
-<style is:global>
-	body {
-		background-color: blue;
-	}
-</style>
-
 <DefaultLayout title={title}>
-	<h1>Host Layout</h1>
 	<slot />
+	<slot slot='head-start' name='head-start' />
+	<slot slot='head-end' name='head-end' />
+	<slot slot='body-start' name='body-start' />
+	<slot slot='body-end' name='body-end' />
+	<slot slot='header' name='header' />
+	<slot slot='footer' name='footer' />
 </DefaultLayout>
