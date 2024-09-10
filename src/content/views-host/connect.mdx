@@ -2,8 +2,9 @@
 title: 'Connect'
 key: 1
 ---
-import '../../scripts/GenerateQrCode.js';
-import RoomCode from '../../components/RoomCode.astro';
+
+import RoomCodeQR from '@components/RoomCodeQR.jsx'
+import SimplePeerScript from '@components/SimplePeerScript.jsx'
 
 <header>
 	<h1>Feature Creeps (working title)</h1>
@@ -15,7 +16,7 @@ import RoomCode from '../../components/RoomCode.astro';
 		<p>Join at FeatureCreeps.tv</p>
 		<p>Enter the room code:</p>
 		<p>GUIJ</p>
-		<svg class="room-qr"></svg>
+		<RoomCodeQR client:load />
 	</div>
 	<aside>
 		<h2>Players:</h2>
@@ -28,4 +29,4 @@ import RoomCode from '../../components/RoomCode.astro';
 	</aside>
 </section>
 
-<script src="/node_modules/qrcode-svg/dist/qrcode.min.js"></script>
+<SimplePeerScript client:load />
