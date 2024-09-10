@@ -1,7 +1,6 @@
 ---
 
 ---
-
 <!-- TODO: Functional, but doesn't do what we want yet. -->
 <!-- Based on the basic example here: https://github.com/feross/simple-peer -->
 <!-- Requires some work to make it more idiomatic with Astro, such as putting it in utilities and calling it from there.. -->
@@ -19,7 +18,7 @@
 </form>
 <pre id="outgoing"></pre>
 <video src="" id="video"></video>
-<script is:inline src="./node_modules/simple-peer/simplepeer.min.js"></script>
+<script is:inline src="/node_modules/simple-peer/simplepeer.min.js"></script>
 <script>
   import { Handshake } from "@utilities/web-socket";
 

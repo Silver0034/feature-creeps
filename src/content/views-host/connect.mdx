@@ -1,0 +1,31 @@
+---
+title: 'Connect'
+key: 1
+---
+import '../../scripts/GenerateQrCode.js';
+import RoomCode from '../../components/RoomCode.astro';
+
+<header>
+	<h1>Feature Creeps (working title)</h1>
+	<p>Choose your own Adventurer</p>
+	<p>60s</p>
+</header>
+<section>
+	<div>
+		<p>Join at FeatureCreeps.tv</p>
+		<p>Enter the room code:</p>
+		<p>GUIJ</p>
+		<svg class="room-qr"></svg>
+	</div>
+	<aside>
+		<h2>Players:</h2>
+		<ul>
+			<li>Player 1</li>
+			<li>Player 2</li>
+			<li>Player 3</li>
+			<li>Player 4</li>
+		</ul>
+	</aside>
+</section>
+
+<script src="/node_modules/qrcode-svg/dist/qrcode.min.js"></script>

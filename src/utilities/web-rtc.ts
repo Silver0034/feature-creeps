@@ -1,6 +1,6 @@
 // TODO: Currently untested.
 
-import { Handshake } from "@utilities/web-socket"
+import { Handshake } from "@utilities/web-socket";
 import "./node_modules/simple-peer/simplepeer.min.js";
 
 // A comprehensive list of commands to accommodate:

@@ -29,7 +29,7 @@ export class Handshake {
         if (!this.socket) {
             // TODO: Make this customizable, as needed, to allow self-hosting.
             // TODO: Add support to negotiate on room codes.
-            this.socket = new WebSocket('ws://localhost:8080');
+            this.socket = new WebSocket('ws://localhost:9080');
             this.setupSocketEvents();
         }
     }

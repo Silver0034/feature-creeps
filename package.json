@@ -4,14 +4,16 @@
   "version": "0.0.1",
   "scripts": {
     "build:fonts": "node ./scripts/font-fallbacks.js",
-    "dev": "npm run build:fonts && astro dev",
-    "start": "npm run build:fonts && astro dev",
+    "dev": "concurrently \"npm run build:fonts && astro dev\" \"node handshake-server.js\"",
+    "start": "concurrently \"npm run build:fonts && astro dev\" \"node handshake-server.js\"",
     "build": "npm run build:fonts && astro check && astro build",
     "preview": "astro preview",
+    "start-handshake": "node handshake-server.js",
     "astro": "astro"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.3",
+    "@astrojs/mdx": "^3.1.5",
     "@astrojs/node": "^8.3.3",
     "@capsizecss/core": "^4.1.2",
     "@capsizecss/metrics": "^3.2.0",
@@ -20,14 +22,16 @@
     "@fontsource/permanent-marker": "^5.0.13",
     "@mlc-ai/web-llm": "^0.2.62",
     "astro": "^4.15.4",
-    "express": "^4.19.2",
+    "express": "^4.20.0",
     "https": "^1.0.0",
     "openai": "^4.58.1",
     "qrcode-svg": "^1.1.0",
     "simple-peer": "^9.11.1",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
+    "concurrently": "^9.0.0",
     "sass": "^1.77.8"
   }
 }

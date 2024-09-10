@@ -45,7 +45,6 @@ export let state: State = {
 
 export function saveGame(): void {
 	console.log('Saving game.')
-	// TODO: How do I pass along the requirement to store players wins in the save?
 	localStorage.setItem('gameSave', JSON.stringify(state))
 	console.log('Saved!')
 }
