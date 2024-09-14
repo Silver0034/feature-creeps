@@ -2,20 +2,20 @@ import { CharacterSheet } from '@utilities/character-sheet.ts'
 import { GameState, state, saveGame, loadGame, wipeGame } from '@utilities/state.ts'
 import * as prompts from "@utilities/prompts.ts"
 
-function add_ability(character: CharacterSheet, ability: string, isStrength: boolean): boolean {
+async function add_ability(character: CharacterSheet, ability: string, isStrength: boolean): Promise<boolean> {
 	let new_strength = ''
 	let new_weakness = ''
 	if (isStrength) {
 		new_strength = ability
-		new_weakness = prompts.BalanceAbility(character, new_strength, true)
+		new_weakness = await prompts.BalanceAbility(character, new_strength, true)
 	} else {
 		new_weakness = ability
-		new_strength = prompts.BalanceAbility(character, new_weakness, false)
+		new_strength = await prompts.BalanceAbility(character, new_weakness, false)
 	}
 	character.strengths.push(new_strength)
 	character.weaknesses.push(new_weakness)
 	character.level += 1
-	character.className = prompts.GenerateClass(character)
+	character.className = await prompts.GenerateClass(character)
 	return true
 }
 
@@ -65,11 +65,11 @@ function print_players(): void {
 	}
 }
 
-function run_round(round: number): void {
+async function run_round(round: number): Promise<void> {
 	// TODO: Completely refactor this to instead prompt clients to enter abilities.
 	console.log(`Begin round ${round + 1}`)
 	// TODO: Pre-generate and cache these?
-	const enemy = prompts.GenerateEnemy(round + 1)
+	const enemy = await prompts.GenerateEnemy(round + 1)
 	console.log(enemy)
 	for (const player of state.players) {
 		while (true) {
@@ -80,7 +80,8 @@ function run_round(round: number): void {
 			) as string
 			const validationError = prompts.ValidateAbility(player, ability)
 			if (validationError === null) {
-				add_ability(player, ability)
+				// TODO: Support strengths and weaknesses.
+				await add_ability(player, ability, true)
 				break
 			} else {
 				console.log(validationError)
@@ -92,14 +93,14 @@ function run_round(round: number): void {
 	// The face-off.
 	for (const player of state.players) {
 		console.log(`${player.name} is about to face ${enemy.name}!`)
-		const [winner, combat_description] = prompts.Combat(player, enemy)
+		const [winner, combat_description] = await prompts.Combat(player, enemy)
 		console.log(combat_description)
 		console.log(`${winner.name} wins this round!`)
 		winner.wins += 1
 	}
 }
 
-function run_pvp_pairs(): void {
+async function run_pvp_pairs(): Promise<void> {
 	console.log('Bonus round! Begin PvP!')
 	const pairs = [] as [CharacterSheet, CharacterSheet][]
 	for (let i = 0; i < state.players.length; i++) {
@@ -115,18 +116,20 @@ function run_pvp_pairs(): void {
 
 	for (const [p1, p2] of pairs) {
 		console.log(`${p1.name} is about to face ${p2.name}!`)
-		const [winner, combat_description] = prompts.Combat(p1, p2)
+		const [winner, combat_description] = await prompts.Combat(p1, p2)
 		console.log(combat_description)
 		console.log(`${winner.name} wins this round!`)
 	}
 }
 
-function run_pvp_br(): void {
+async function run_pvp_br(): Promise<void> {
 	console.log('Bonus round! Begin PvP!')
 	state.players.sort(() => Math.random() - 0.5)
-	const [winner, combat_description] = prompts.BattleRoyale(state.players)
+	const [winner, combat_description] = await prompts.BattleRoyale(state.players)
 	console.log(combat_description)
-	console.log(`${winner.name} wins the final conflict!`)
+	if(winner) {
+		console.log(`${winner.name} wins the final conflict!`)
+	}
 }
 
 function main(): void {

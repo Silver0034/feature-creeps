@@ -16,24 +16,27 @@ import SimplePeer, * as Peer from "simple-peer";
 // TODO: Consider marking the first peer to connect as a "leader", which permits them to send additional commands. If this happens, be sure to send a command to inform them of this, so the client can unlock the extra UI associated with that.
 
 interface WebRTCHostData {
-    peers: Map<string, Peer.SimplePeer>
+    peers: Map<string, Peer.Instance>
     handshake: Handshake | null
 }
 
 export class WebRTCHost {
-    private peers: Map<string, Peer.SimplePeer> = new Map();
+    private peers: Map<string, Peer.Instance> = new Map();
     private handshake: Handshake | null = null;
     constructor() { }
     public OpenConnections(): void {
-        if (this.handshake === null) {
+        if (!this.handshake) {
             this.handshake = new Handshake();
         }
+
+        const self = this;
+
         function customHandler(event: MessageEvent<string>): void {
             console.log(`Received message from client: ${event.data}`);
             // TODO: Negotiation takes more than naively creating a peer. You need to handle things based on room code, for instance. Perhaps the WebSocket server should handle a lot of this though?
             // TODO: I intend to use a standard format for all messages, which will include additional auth. Ideally, the WebSocket server will handle message filtering, but we can receive the data here and do things with it to reject certain handshakes automatically.
 
-            const peer: Peer.Instance = new Peer.default({
+            const peer: Peer.Instance = new SimplePeer({
                 initiator: false, // The host always waits for clients to ask them to connect.
                 trickle: false,
             });
@@ -43,7 +46,7 @@ export class WebRTCHost {
             peer.on("signal", (data: object) => {
                 console.log("SIGNAL", JSON.stringify(data));
                 // TODO: Include extra identifying info for for WebSocket routing purposes.
-                this.handshake.send(JSON.stringify(data))
+                self.handshake?.send(JSON.stringify(data))
             });
             // Establish connection.
             peer.on("connect", () => {
@@ -58,9 +61,9 @@ export class WebRTCHost {
             // TODO: Is it appropriate to close the connection, or might they return later and reuse this peer?
             peer.on('close', () => {
                 console.log("CLOSE");
-                Object.keys(this.peers).forEach((key) => {
-                    if (this.peers[key] === peer) {
-                        delete this.peers[key];
+                Object.keys(self.peers).forEach((key) => {
+                    if (self.peers.get(key) === peer) {
+                        self.peers.delete(key);
                         return;
                     }
                 });
@@ -85,8 +88,8 @@ export class WebRTCHost {
                         name: string
                     }
                     const getNameData: GetName = jsonData as GetName;
-                    if (getNameData.name in this.peers) {
-                        console.log("Peer.SimplePeer requested an existing name. Rejecting.");
+                    if (getNameData.name in self.peers) {
+                        console.log("Peer.Instance requested an existing name. Rejecting.");
                         const request: object = {
                             command: "GetName",
                             error: "duplicate"
@@ -95,7 +98,7 @@ export class WebRTCHost {
                         return
                     } else {
                         // Associate the peer to the name.
-                        this.peers[getNameData.name] = peer;
+                        self.peers.set(getNameData.name, peer);
                     }
                 }
             });
@@ -110,27 +113,30 @@ export class WebRTCHost {
 
 export class WebRTCClient {
     // TODO: host is potentially unused?
-    private host: Peer.SimplePeer | null = null;
+    private host: Peer.Instance | null = null;
     private handshake: Handshake | null = null;
     constructor() { }
     public OpenConnections(): void {
         if (this.handshake === null) {
             this.handshake = new Handshake();
         }
+
+        const self = this;
+
         function customHandler(event: MessageEvent<string>): void {
             console.log(`Received message from host: ${event.data}`);
             const peer: Peer.Instance = new Peer.default({
                 initiator: true, // The client always initiates handshakes.
                 trickle: false,
             });
-            this.host = peer;
+            self.host = peer;
             // Handle errors.
             peer.on("error", (err: Error) => console.log("error", err));
             // Handle handshakes.
             peer.on("signal", (data: object) => {
                 console.log("SIGNAL", JSON.stringify(data));
                 // TODO: Include extra identifying info for for WebSocket routing purposes.
-                this.handshake.send(JSON.stringify(data))
+                self.handshake?.send(JSON.stringify(data))
             });
             // Establish connection.
             peer.on("connect", () => {
