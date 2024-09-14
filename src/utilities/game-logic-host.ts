@@ -2,10 +2,10 @@ import { CharacterSheet } from '@utilities/character-sheet.ts'
 import { GameState, state, saveGame, loadGame, wipeGame } from '@utilities/state.ts'
 import * as prompts from "@utilities/prompts.ts"
 
-function add_ability(character: CharacterSheet, ability: string): boolean {
+function add_ability(character: CharacterSheet, ability: string, isStrength: boolean): boolean {
 	let new_strength = ''
 	let new_weakness = ''
-	if (prompts.IsStrength(character, ability)) {
+	if (isStrength) {
 		new_strength = ability
 		new_weakness = prompts.BalanceAbility(character, new_strength, true)
 	} else {

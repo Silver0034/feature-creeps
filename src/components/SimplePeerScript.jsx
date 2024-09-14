@@ -39,11 +39,6 @@ const SimplePeerScript = () => {
 				console.log('SIGNAL', JSON.stringify(data))
 				handshake.send(JSON.stringify(data))
 			})
-			// Transmit handshakes.
-			document.querySelector('form').addEventListener('submit', (ev) => {
-				ev.preventDefault()
-				p.signal(JSON.parse(document.querySelector('#incoming').value))
-			})
 			// Establish connection.
 			p.on('connect', () => {
 				console.log('CONNECT')

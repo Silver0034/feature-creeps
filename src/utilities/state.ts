@@ -8,7 +8,8 @@ export enum GameState {
 	Init = 0,
 	Connect,
 	Intro,
-	Round,
+	RoundAbilities,
+	RoundBattle,
 	BattleRoyale,
 	Leaderboard,
 	End
@@ -28,6 +29,13 @@ interface State {
 	enemies: CharacterSheet[]
 }
 
+interface InferenceConfig {
+	engine: string | null;
+	modelName: string | null;
+	apiURL: string | null;
+	apiKey: string | null;
+}
+
 // TODO: Consider removing these from the state object and just declaring them directly in the file.
 export let state: State = {
 	gameState: GameState.Init as GameState,
@@ -38,7 +46,7 @@ export let state: State = {
 		modelName: null,
 		apiURL: null,
 		apiKey: "sk-no-key-required" as string | null
-	} as object,
+	} as InferenceConfig,
 	players: [] as CharacterSheet[],
 	enemies: [] as CharacterSheet[]
 }

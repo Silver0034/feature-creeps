@@ -24,7 +24,6 @@
 "use strict";
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-var fs = require("fs");
 var https = require("https");
 var http = require("http");
 var express = require("express");
