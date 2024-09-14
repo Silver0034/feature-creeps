@@ -1,15 +1,16 @@
 import { state } from "@utilities/state";
 import OpenAI from 'openai';
-import { CreateMLCEngine } from "@mlc-ai/web-llm";
+import * as webllm from "@mlc-ai/web-llm";
 
 let client: any;
 
 try {
   if (state.inference.engine === "local") {
-    const initProgressCallback = (initProgress) => {
-      console.log(initProgress);
-    }
-    client = await CreateMLCEngine(
+    const initProgressCallback = (report: webllm.InitProgressReport) => {
+      console.log(report);
+    };
+    client = await webllm.CreateWebWorkerMLCEngine(
+      new Worker(new URL("./llm-worker.ts", import.meta.url), { type: "module" }),
       state.inference.modelName || "Llama-3.1-8B-Instruct-q4f32_1-MLC",
       { initProgressCallback: initProgressCallback },
     );
