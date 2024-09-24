@@ -4,116 +4,117 @@
 
 <script>
 	import {
-		IsStrength,
-		BalanceAbility,
-		GenerateClass,
-		ValidateAbility,
-		Combat,
-		GenerateEnemy,
-		BattleRoyale,
+	  IsStrength,
+	  BalanceAbility,
+	  GenerateClass,
+	  ValidateAbility,
+	  Combat,
+	  GenerateEnemy,
+	  BattleRoyale,
 	} from "@utilities/prompts";
 	import { CharacterSheet } from "@utilities/character-sheet";
-
+  
 	async function GenerateText(): Promise<void> {
-		const ability: string = "Gravitic Mine";
-		const vorlok = Object.assign(new CharacterSheet(), {
-			name: "Vorlok, Devourer of Stars",
-			className: "Cosmic Titan",
-			level: 3,
-			strengths: [
-				"Can manipulate gravity to crush enemies or slow their movement",
-				"Immune to all non-magical attacks",
-				"Regenerates health rapidly in starlight",
-				"Capable of firing energy beams that pierce through magical barriers",
-			],
-			weaknesses: ["Weak to intense gravity"],
-		});
-		const microwave = Object.assign(new CharacterSheet(), {
-			name: "Microwave Disaster",
-			className: "Food Explosion",
-			level: 1,
-			strengths: [
-				"Emits powerful microwaves",
-				"Contaminates its enemies with a horrid goo",
-			],
-			weaknesses: [
-				"Powerless (yet still disgusting) when unplugged",
-				"Weak to cleaning supplies",
-			],
-		});
-		const alastor = Object.assign(new CharacterSheet(), {
-			name: "Alastor the Adventurer",
-			className: "Knight",
-			level: 2,
-			strengths: ["Trained in swordsmanship", "Brave", "Honorable"],
-			weaknesses: [
-				"Self-absorbed",
-				"Headstrong",
-				"Follows a rigid code of ethics, avoiding dirty paths to victory",
-			],
-		});
-		// TODO: Really terrible things happen when different prompts are called one after the other locally. Figure out why.
-		// try {
-		// 	const result: any = await BattleRoyale([vorlok, microwave, alastor]);
-		// 	console.log(JSON.stringify(result, null, 2));
-		// } catch (error) {
-		// 	console.error("Error generating text:", error);
-		// }
-
-		// try {
-		// 	const result: any = await IsStrength(vorlok, ability);
-		// 	console.log(result);
-		// } catch (error) {
-		// 	console.error("Error generating text:", error);
-		// }
-		// try {
-		// 	const result: any = await BalanceAbility(vorlok, ability, true);
-		// 	console.log(result);
-		// } catch (error) {
-		// 	console.error("Error generating text:", error);
-		// }
-		
-		// try {
-		// 	const result: any = await GenerateClass(vorlok);
-		// 	console.log(result);
-		// } catch (error) {
-		// 	console.error("Error generating text:", error);
-		// }
-		// try {
-		// 	const result: any = await GenerateClass(microwave);
-		// 	console.log(result);
-		// } catch (error) {
-		// 	console.error("Error generating text:", error);
-		// }
-		// try {
-		// 	const result: any = await GenerateClass(alastor);
-		// 	console.log(result);
-		// } catch (error) {
-		// 	console.error("Error generating text:", error);
-		// }
-
-		// try {
-		// 	const result: any = await ValidateAbility(vorlok, ability);
-		// 	console.log(result);
-		// } catch (error) {
-		// 	console.error("Error generating text:", error);
-		// }
-		// try {
-		// 	const result: any = await Combat(vorlok, microwave);
-		// 	console.log(JSON.stringify(result, null, 2));
-		// } catch (error) {
-		// 	console.error("Error generating text:", error);
-		// }
-
-		try {
-			const result: any = await GenerateEnemy(3);
-			console.log(JSON.stringify(result, null, 2));
-		} catch (error) {
-			console.error("Error generating text:", error);
-		}
+	  const ability: string = "Gravitic Mine";
+	  const vorlok = Object.assign(new CharacterSheet(), {
+		name: "Vorlok, Devourer of Stars",
+		className: "Cosmic Titan",
+		level: 3,
+		strengths: [
+		  "Can manipulate gravity to crush enemies or slow their movement",
+		  "Immune to all non-magical attacks",
+		  "Regenerates health rapidly in starlight",
+		  "Capable of firing energy beams that pierce through magical barriers",
+		],
+		weaknesses: ["Weak to intense gravity"],
+	  });
+	  const microwave = Object.assign(new CharacterSheet(), {
+		name: "Microwave Disaster",
+		className: "Food Explosion",
+		level: 1,
+		strengths: [
+		  "Emits powerful microwaves",
+		  "Contaminates its enemies with a horrid goo",
+		],
+		weaknesses: [
+		  "Powerless (yet still disgusting) when unplugged",
+		  "Weak to cleaning supplies",
+		],
+	  });
+	  const alastor = Object.assign(new CharacterSheet(), {
+		name: "Alastor the Adventurer",
+		className: "Knight",
+		level: 2,
+		strengths: ["Trained in swordsmanship", "Brave", "Honorable"],
+		weaknesses: [
+		  "Self-absorbed",
+		  "Headstrong",
+		  "Follows a rigid code of ethics, avoiding dirty paths to victory",
+		],
+	  });
+  
+	  try {
+		const result: any = await BattleRoyale([vorlok, microwave, alastor]);
+		console.log(JSON.stringify(result, null, 2));
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
+  
+	  try {
+		const result: any = await IsStrength(vorlok, ability);
+		console.log(result);
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
+	  try {
+		const result: any = await BalanceAbility(vorlok, ability, true);
+		console.log(result);
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
+  
+	  try {
+		const result: any = await GenerateClass(vorlok);
+		console.log(result);
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
+	  try {
+		const result: any = await GenerateClass(microwave);
+		console.log(result);
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
+	  try {
+		const result: any = await GenerateClass(alastor);
+		console.log(result);
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
+  
+	  try {
+		const result: any = await ValidateAbility(vorlok, ability);
+		console.log(result);
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
+	  try {
+		const result: any = await Combat(vorlok, microwave);
+		console.log(JSON.stringify(result, null, 2));
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
+  
+	  try {
+		const result: any = await GenerateEnemy(3);
+		console.log(JSON.stringify(result, null, 2));
+	  } catch (error) {
+		console.error("Error generating text:", error);
+	  }
 	}
-
+  
 	GenerateText();
-</script>
-
-<p>Check the console</p>
+  </script>
+  
+  <p>Check the console</p>
+  
