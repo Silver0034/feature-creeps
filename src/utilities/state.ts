@@ -25,6 +25,7 @@ interface State {
 		apiURL: string | null
 		apiKey: string | null
 	}
+	tts_voice: string
 	players: CharacterSheet[]
 	enemies: CharacterSheet[]
 }
@@ -47,6 +48,7 @@ export let state: State = {
 		apiURL: null,
 		apiKey: "sk-no-key-required" as string | null
 	} as InferenceConfig,
+	tts_voice: "en_US-ryan-high",
 	players: [] as CharacterSheet[],
 	enemies: [] as CharacterSheet[]
 }
