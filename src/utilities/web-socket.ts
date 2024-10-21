@@ -1,5 +1,3 @@
-import { state } from "@utilities/state";
-
 export class Handshake {
     private socket: WebSocket | null = null;
     private handleOpen: () => void;

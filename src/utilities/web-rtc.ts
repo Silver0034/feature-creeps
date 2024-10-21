@@ -3,16 +3,6 @@
 import { Handshake } from "@utilities/web-socket";
 import SimplePeer, * as Peer from "simple-peer";
 
-// A comprehensive list of commands to accommodate:
-// getName: Handles the process of getting a username for a client.
-//          The server requests this upon a successful connection.
-//          The client uses this to provide the response.
-//          The server also sends a command with this, alongside an "error", if the name is invalid.
-// TODO: characterSheet: The server provides the player's current character sheet data.
-// TODO: ability: The client provides a new ability in the "strength" or "weakness" fields.
-//          The server also sends a command with this, alongside an "error", if the ability is invalid.
-// TODO: setState: Sent by the server to inform the client to change state. Valid states come from enum GameState.
-
 // TODO: Consider marking the first peer to connect as a "leader", which permits them to send additional commands. If this happens, be sure to send a command to inform them of this, so the client can unlock the extra UI associated with that.
 
 interface WebRTCHostData {

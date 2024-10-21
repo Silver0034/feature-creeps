@@ -26,7 +26,9 @@ interface State {
 		apiKey: string | null
 	}
 	tts_voice: string
-	players: CharacterSheet[]
+	// Players are mapped by name.
+	// TODO: There is more to a player than a CharacterSheet. We must also store connection info (secret, WebRTC connection, etc.)
+	players: Map<string, CharacterSheet>
 	enemies: CharacterSheet[]
 }
 
@@ -49,7 +51,7 @@ export let state: State = {
 		apiKey: "sk-no-key-required" as string | null
 	} as InferenceConfig,
 	tts_voice: "en_US-ryan-high",
-	players: [] as CharacterSheet[],
+	players: new Map<string, CharacterSheet>(),
 	enemies: [] as CharacterSheet[]
 }
 
@@ -80,13 +82,13 @@ export function wipeGame(): void {
 }
 
 // DEBUG: Set temporary default values here.
-state.inference.engine = "API"
-state.inference.apiURL = "http://192.168.0.12:8080/v1"
+// state.inference.engine = "API"
+// state.inference.apiURL = "http://192.168.0.12:8080/v1"
 // state.inference.modelName = "llama3.1:70b-instruct-q4_K_S"
-state.inference.modelName = "Phi-3-mini-4k-instruct-fp16"
+// state.inference.modelName = "Phi-3-mini-4k-instruct-fp16"
 
-// state.inference.engine = "local"
+state.inference.engine = "local"
 // Tested and known working model. No gibberish.
-// state.inference.modelName = "Llama-3.1-8B-Instruct-q4f32_1-MLC"
+state.inference.modelName = "Llama-3.1-8B-Instruct-q4f32_1-MLC"
 // This model occasionally spouts garbage symbols. It would likely benefit from a low temperature.
 // state.inference.modelName = "Phi-3.5-mini-instruct-q4f16_1-MLC"
