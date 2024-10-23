@@ -1,0 +1,24 @@
+---
+import { Picture } from 'astro:assets'
+import logo from '@assets/logo.png'
+---
+
+<style>
+	header {
+		background-color: var(--color-primary);
+		border: 0.25em solid var(--color-tertiary);
+		border-radius: 3em;
+		padding-inline: 1em;
+		margin-bottom: 1em;
+	}
+
+	.logo {
+		--offset: 1em;
+		margin-block-start: var(--offset);
+		margin-block-end: calc(var(--offset) * -1);
+	}
+</style>
+
+<header class='client-header'>
+	<Picture class='logo' src={logo} alt='Feature Creep' />
+</header>

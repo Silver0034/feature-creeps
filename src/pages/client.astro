@@ -2,13 +2,8 @@
 import type { AstroInstance } from 'astro'
 import Layout from '@layouts/client.astro'
 import ViewDebugPanel from '@components/viewDebugPanel.astro'
-// import View from '@components/View.astro'
-
-// const views = (await getCollection(
-// 	'views-client'
-// )) as CollectionEntry<'views-client'>[]
-// views.sort((a, b) => a.data.key - b.data.key)
-// glob to import all view components
+import Header from '@components/ClientHeader.astro'
+import PaperTexture from '@components/PaperTexture.astro'
 
 // Extend AstroInstance to add sortOrder
 interface AstroInstanceWithSortOrder extends AstroInstance {
@@ -23,16 +18,9 @@ const views = (await Astro.glob(
 views.sort((a, b) => a.sortOrder - b.sortOrder)
 ---
 
-<style>
-	header {
-		display: inline-block;
-		background-color: lightgray;
-		width: 100%;
-		box-sizing: border-box;
-	}
-</style>
-
 <Layout id='client-page'>
+	<PaperTexture />
+	<Header />
 	{
 		views.map((view) => (
 			<section class='view' data-view-key={view.sortOrder}>
