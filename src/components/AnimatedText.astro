@@ -1,0 +1,276 @@
+---
+const { text } = Astro.props
+---
+
+<style is:global>
+	.animated-text {
+		display: grid;
+		grid-template-columns: repeat(var(--characters-per-line), 1ch);
+		box-sizing: border-box;
+		width: 100%;
+		flex-wrap: wrap;
+		font-family: monospace;
+	}
+	.animated-text--character {
+		position: relative;
+		height: 1rem;
+		width: 100%;
+		max-width: 1ch;
+	}
+
+	.animated-text--character.animate::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		animation: animateCharacter 2s infinite;
+	}
+
+	/* Css animation to rotate between a handful of characters */
+	@keyframes animateCharacter {
+		0% {
+			content: 'H' / '';
+		}
+		10% {
+			content: 'e' / '';
+		}
+		20% {
+			content: 'L' / '';
+		}
+		30% {
+			content: '1' / '';
+		}
+		40% {
+			content: '0' / '';
+		}
+		50% {
+			content: 'W' / '';
+		}
+		60% {
+			content: 'O' / '';
+		}
+		70% {
+			content: 'R' / '';
+		}
+		80% {
+			content: 'L' / '';
+		}
+		90% {
+			content: 'D' / '';
+		}
+		90% {
+			content: ':' / '';
+		}
+	}
+</style>
+
+<div class='animated-text--container'></div>
+
+<script define:vars={{ text }}>
+	class AnimatedText {
+		constructor(text) {
+			this.parent = document.querySelector('.animated-text--container')
+			this.panel = this.createPanel()
+			this.text = text
+			this.chWidth = this.getChWidth()
+			this.setPanelWidth()
+			this.spans = []
+			this.characterAnimationDurationIn = 100
+			this.delayBetweenCharactersIn = 5
+			// this.characterAnimationDurationIn = 0
+			// this.delayBetweenCharactersIn = 0
+			this.characterAnimationDurationOut = 100
+			this.delayBetweenCharactersOut = 50
+
+			this.createSpans()
+		}
+
+		getChWidth() {
+			// Create a temporary span to measure the width of the '0' character
+			const tempSpan = document.createElement('span')
+			tempSpan.style.position = 'absolute'
+			tempSpan.style.visibility = 'hidden'
+			tempSpan.style.width = '1ch'
+
+			// Append the temporary span to the panel
+			this.panel.appendChild(tempSpan)
+
+			// Get the width of the '0' character
+			const chWidth = tempSpan.getBoundingClientRect().width
+
+			// Remove the temporary span
+			this.panel.removeChild(tempSpan)
+
+			return chWidth
+		}
+
+		createPanel() {
+			const panel = document.createElement('div')
+			panel.classList.add('animated-text')
+			this.parent.appendChild(panel)
+			return panel
+		}
+
+		setPanelWidth() {
+			const width = this.getCharactersPerLine()
+			this.panel.style.setProperty('--characters-per-line', width)
+		}
+
+		getCountOfCharactersLeftInWord(currentCharacter, index) {
+			const characters = this.text.split('')
+			const offsetToHandleSpacesAtLineEnds = 1
+
+			let charactersLeftInWord = 0
+			let characterInWord = currentCharacter
+
+			while (
+				characterInWord !== ' ' &&
+				index + charactersLeftInWord < characters.length
+			) {
+				charactersLeftInWord++
+				characterInWord = characters[index + charactersLeftInWord]
+			}
+
+			return charactersLeftInWord + offsetToHandleSpacesAtLineEnds
+		}
+
+		createSpan(character) {
+			const span = document.createElement('span')
+			span.classList.add('animated-text--character')
+			span.setAttribute('data-character', character)
+			this.spans.push(span)
+
+			const charactersPerLine = this.getCharactersPerLine()
+
+			const index = this.spans.length
+
+			const columnNumber = index % charactersPerLine
+			span.setAttribute('data-column', columnNumber)
+
+			const rowNumber = Math.floor(index / charactersPerLine)
+			span.setAttribute('data-row', rowNumber)
+
+			this.panel.appendChild(span)
+
+			// set the entrance animation delay
+			const entranceAnimationDelay =
+				rowNumber * charactersPerLine +
+				columnNumber * this.delayBetweenCharactersIn
+			span.setAttribute(
+				'data-entrance-animation-delay',
+				entranceAnimationDelay
+			)
+
+			// Set the exit animation delay
+			const exitAnimationDelay =
+				rowNumber * charactersPerLine +
+				(charactersPerLine - columnNumber) *
+					this.delayBetweenCharactersOut
+			span.setAttribute('data-exit-animation-delay', exitAnimationDelay)
+		}
+
+		endLine(charactersLeftInLine) {
+			while (charactersLeftInLine > 0) {
+				this.createSpan('')
+				charactersLeftInLine--
+			}
+		}
+
+		getCharactersPerLine() {
+			const style = getComputedStyle(this.panel)
+			const width = this.panel.clientWidth // Width including padding
+			const paddingLeft = parseFloat(style.paddingLeft)
+			const paddingRight = parseFloat(style.paddingRight)
+			const borderLeft = parseFloat(style.borderLeftWidth)
+			const borderRight = parseFloat(style.borderRightWidth)
+
+			// Calculate the total width including padding and borders
+			const totalWidth =
+				width + paddingLeft + paddingRight + borderLeft + borderRight
+
+			const charactersPerLine = Math.floor(totalWidth / this.chWidth) - 1
+
+			return charactersPerLine
+		}
+
+		createSpans() {
+			const charactersPerLine = this.getCharactersPerLine()
+
+			let charactersLeftInLine = charactersPerLine
+
+			const characters = this.text.split('')
+
+			characters.forEach((character, index) => {
+				const charactersLeftInWord =
+					this.getCountOfCharactersLeftInWord(character, index)
+
+				// If the word won't fit on the current line, move to the next line
+				if (
+					charactersLeftInWord > charactersLeftInLine &&
+					charactersLeftInWord < charactersPerLine
+				) {
+					this.endLine(charactersLeftInLine)
+					charactersLeftInLine = charactersPerLine
+				}
+
+				// If the current character is a \n, move to the next line
+				if (character === '\n') {
+					this.endLine(charactersLeftInLine)
+					// Add a blank line
+					this.endLine(charactersPerLine)
+					charactersLeftInLine = charactersPerLine
+					return
+				}
+
+				//Add the character
+				this.createSpan(character)
+
+				charactersLeftInLine--
+
+				// If the line has ended, reset the charactersLeftInLine
+				if (charactersLeftInLine < 0) {
+					charactersLeftInLine = charactersPerLine
+				}
+			})
+		}
+
+		async animateTextIn() {
+			this.spans.forEach((span) => {
+				const delay = Number(
+					span.getAttribute('data-entrance-animation-delay')
+				)
+
+				setTimeout(() => {
+					span.classList.add('animate')
+					span.textContent = span.getAttribute('data-character')
+				}, delay)
+
+				setTimeout(() => {
+					span.classList.remove('animate')
+				}, delay + this.characterAnimationDurationIn)
+			})
+		}
+
+		async animateTextOut() {
+			this.spans.forEach((span) => {
+				const delay = Number(
+					span.getAttribute('data-exit-animation-delay')
+				)
+
+				setTimeout(() => {
+					span.classList.add('animate', 'out')
+				}, delay)
+
+				setTimeout(() => {
+					span.classList.remove('animate', 'out')
+					span.textContent = ' '
+				}, delay + this.characterAnimationDurationOut)
+			})
+		}
+	}
+
+	const animatedText = new AnimatedText(text)
+	animatedText.animateTextIn()
+	setTimeout(() => {
+		animatedText.animateTextOut()
+	}, 3500)
+</script>
