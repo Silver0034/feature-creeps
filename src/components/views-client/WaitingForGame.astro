@@ -1,0 +1,36 @@
+---
+export const sortOrder = 3
+
+import Button from '@components/Button.astro'
+import PaperTexture from '@components/PaperTexture.astro'
+import PlayerName from '@components/PlayerName.astro'
+import PlayerFeatures from '@components/PlayerFeatures.astro'
+const buttonText = 'Waiting on the game...'
+---
+
+<style>
+	.waitingMessage {
+		display: flex;
+		justify-content: space-between;
+		column-gap: 1em;
+		flex-wrap: wrap;
+		border-bottom: 1px solid var(--color-text);
+	}
+
+	.message {
+		text-align: center;
+		margin-block: 1em;
+	}
+</style>
+
+<PaperTexture />
+
+<header slot='header'>
+	<h1>Waiting for game</h1>
+</header>
+
+<PlayerName />
+
+<PlayerFeatures />
+
+<Button text={buttonText} disabled />

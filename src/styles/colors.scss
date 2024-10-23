@@ -1,0 +1,33 @@
+// Colors
+:root {
+	--color-text: #000000;
+	--color-background: #ffffff;
+	--color-accent: #d08c60;
+	--color-primary: #797d62;
+	--color-secondary: #be3737;
+	--color-tertiary: #ffbe2f;
+}
+
+.color-text {
+	color: var(--color-text);
+}
+
+.color-background {
+	background-color: var(--color-background);
+}
+
+.color-accent {
+	color: var(--color-accent);
+}
+
+.color-primary {
+	color: var(--color-primary);
+}
+
+.color-secondary {
+	color: var(--color-secondary);
+}
+
+.color-tertiary {
+	color: var(--color-tertiary);
+}

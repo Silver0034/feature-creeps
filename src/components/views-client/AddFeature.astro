@@ -1,0 +1,37 @@
+---
+export const sortOrder = 4
+const waitingMessage = 'Waiting for friends to join?'
+const buttonText = 'Save feature'
+
+import { Icon } from 'astro-icon/components'
+import Button from '@components/Button.astro'
+import PaperTexture from '@components/PaperTexture.astro'
+import PlayerName from '@components/PlayerName.astro'
+import PlayerFeatures from '@components/PlayerFeatures.astro'
+import FeatureField from '@components/FeatureField.astro'
+---
+
+<PaperTexture />
+
+<header slot='header'>
+	<h1>Start game</h1>
+</header>
+
+<PlayerName />
+
+<FeatureField />
+
+<PlayerFeatures />
+
+<Button id='startGame' text={buttonText} />
+
+<script>
+	// TODO - Make the button start the game
+	const startGameButton = document.getElementById(
+		'startGame'
+	) as HTMLButtonElement
+
+	startGameButton.addEventListener('click', () => {
+		console.log('Starting the game...')
+	})
+</script>

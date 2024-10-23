@@ -1,0 +1,30 @@
+---
+import Button from '@components/Button.astro'
+import NameField from '@components/NameField.astro'
+import RoomCode from '@components/RoomCode.astro'
+
+const textButton = 'Join the game'
+---
+
+<form id='joinRoom'>
+	<RoomCode />
+	<NameField />
+	<Button type='submit' text={textButton} />
+</form>
+
+<script>
+	const form = document.getElementById('joinRoom') as HTMLFormElement
+
+	const handleSubmit = (event: SubmitEvent) => {
+		event.preventDefault()
+		const formData = new FormData(form)
+		const roomCode = formData.get('roomCode')
+		const playerName = formData.get('playerName')
+
+		console.log({ roomCode, playerName })
+
+		// TODO! - Make the form do something
+	}
+
+	form.addEventListener('submit', handleSubmit)
+</script>

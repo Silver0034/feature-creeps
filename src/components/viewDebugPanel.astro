@@ -1,7 +1,11 @@
 ---
+import type { AstroInstance } from 'astro'
+interface AstroInstanceWithSortOrder extends AstroInstance {
+	sortOrder: number
+}
 import type { CollectionEntry } from 'astro:content'
 interface Props {
-	views: CollectionEntry<'views-client'>[] | CollectionEntry<'views-host'>[]
+	views: AstroInstanceWithSortOrder[]
 }
 const { views } = Astro.props as Props
 ---
@@ -14,6 +18,21 @@ const { views } = Astro.props as Props
 		width: 100%;
 	}
 </style>
+
+<section id='debugPanel'>
+	<p>
+		<strong>Debug Panel:</strong> Current game state: <span
+			class='gameState'>0</span
+		>
+	</p>
+	{
+		views.map((view) => {
+			const { sortOrder } = view
+			const { name } = view.default
+			return <button data-state={sortOrder}>{name}</button>
+		})
+	}
+</section>
 
 <script>
 	import { getGameStateValue, setGameStateValue } from '@utilities/view-logic'
@@ -42,17 +61,3 @@ const { views } = Astro.props as Props
 	}
 	document.addEventListener('click', handleDebugPanelClick)
 </script>
-
-<section id='debugPanel'>
-	<p>
-		<strong>Debug Panel:</strong> Current game state: <span
-			class='gameState'>0</span
-		>
-	</p>
-	{
-		views.map((view: { data: { title: any; key: any } }) => {
-			const { title, key } = view.data
-			return <button data-state={key}>{title}</button>
-		})
-	}
-</section>

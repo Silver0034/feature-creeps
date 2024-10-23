@@ -1,7 +1,177 @@
 ---
+import { Icon } from 'astro-icon/components'
+const roomCodeLength = 4
+const textLegend = 'Enter your room code:'
+const textQr = 'Or join with QR'
 ---
-<span>ABCD</span>
 
-<script>
-    // TODO update code on room code change event
-</script>
+<style define:vars={{ roomCodeLength }}>
+	#roomCode {
+		--gap: 0.5em;
+		--input-font-size-min: 1rem;
+		--input-font-size-max: 5rem;
+		--input-font-size-target: calc(100vw / calc(var(--roomCodeLength) * 2));
+		--outline-color: var(--color-text);
+
+		--input-font-size: clamp(
+			var(--input-font-size-min),
+			var(--input-font-size-target),
+			var(--input-font-size-max)
+		);
+
+		position: relative;
+		margin-block: 1rem;
+		padding: 0;
+		border: none;
+
+		legend {
+			margin-block-end: 0.25rem;
+		}
+
+		.inputs {
+			display: grid;
+			grid-template-columns: repeat(var(--roomCodeLength), 1fr);
+			gap: var(--gap);
+		}
+		input {
+			width: 100%;
+			font-family: var(--font-heading);
+			font-size: clamp(
+				1rem,
+				calc(
+					calc(100vw / calc(var(--roomCodeLength) * 2)) - var(--gap)
+				),
+				5rem
+			);
+			border: none;
+			background: none;
+			text-align: center;
+			text-overflow: show;
+			outline: none;
+			text-transform: uppercase;
+		}
+		label {
+			position: relative;
+
+			&:focus-within {
+				--outline-color: var(--color-primary);
+			}
+		}
+		.outline {
+			position: absolute;
+			inset: 0;
+			height: 100%;
+			width: 90%;
+			stroke-width: 1.5px;
+		}
+		.qr {
+			position: absolute;
+			right: 0;
+			top: 0;
+		}
+	}
+</style>
+
+<fieldset id='roomCode'>
+	<legend>{textLegend}</legend>
+	<!-- <a class='qr' href='#'>{textQr} <Icon name='fa6-solid:qrcode' /></a> -->
+
+	<input name='roomCode' class='fullRoomCode' type='hidden' />
+
+	<div class='inputs'>
+		{
+			Array.from({ length: roomCodeLength }).map((_, i) => (
+				<label>
+					<input type='text' maxlength='1' class='character' />
+					<svg
+						viewBox='0 0 314 71'
+						fill='none'
+						xmlns='http://www.w3.org/2000/svg'
+						class='outline'
+						preserveAspectRatio='none'
+					>
+						<path
+							d='M1.35068 64.6733C1.17804 65.6061 2.329 69.6082 6.05703 69.1604C10.7171 68.6007 30.9105 68.041 36.6061 69.1604C42.3017 70.2798 94.5976 70.2799 96.151 69.1604C97.7043 68.041 265.983 68.041 268.572 69.1604C271.161 70.2799 304.817 70.2799 307.923 69.1604C311.03 68.041 313.101 69.1604 312.583 62.4439C312.066 55.7274 313.74 47.6115 312.583 42.2943C311.893 39.1172 313.243 15.3358 312.583 12.6296C311.151 6.75259 314.137 1.99504 309.995 1.99504C305.852 1.99504 256.663 -0.243805 232.845 1.99504C209.027 4.23389 108.06 3.67418 98.7399 1.99504C89.4198 0.315906 12.7882 3.11446 8.64593 1.99504C4.50368 0.875618 1.28775 0.315909 1.91492 8.15187C2.6053 14.4953 3.57176 20.3468 1.91486 29.75C0.706834 36.6057 0.893341 42.1065 1.35062 48.5003'
+							stroke='var(--outline-color)'
+							stroke-linecap='round'
+						/>
+					</svg>
+				</label>
+			))
+		}
+	</div>
+
+	<script>
+		/*
+    If a user inputs, tabs, delete, or arrows right move to next input.
+    If they arrow left, backspace move to previous input.
+    */
+		const inputs = document.querySelectorAll<HTMLInputElement>(
+			'#joinRoom .character'
+		)
+		inputs.forEach((input, i) => {
+			input.addEventListener('input', (e) => {
+				const target = e.target as HTMLInputElement
+				const isAlphaNumeric = target.value.match(/[a-zA-Z0-9]/)
+				const isLastInput = i === inputs.length - 1
+
+				if (isAlphaNumeric && !isLastInput) {
+					inputs[i + 1].focus()
+				}
+			})
+
+			input.addEventListener('keydown', (e: KeyboardEvent) => {
+				const isFirstInput = i === 0
+				const isLastInput = i === inputs.length - 1
+
+				// Move left
+				if (
+					['ArrowLeft', 'Backspace'].includes(e.key) &&
+					!isFirstInput
+				) {
+					inputs[i - 1].focus()
+				}
+
+				// Move right
+				if (['ArrowRight', 'Delete'].includes(e.key) && !isLastInput) {
+					inputs[i + 1].focus()
+				}
+
+				// Clear inputs on delete
+				if (['Delete', 'Backspace'].includes(e.key)) {
+					e.preventDefault()
+					input.value = ''
+				}
+			})
+
+			input.addEventListener('paste', (e: ClipboardEvent) => {
+				e.preventDefault()
+				const pasteData = e.clipboardData?.getData('text') || ''
+				const pasteArray = pasteData.split('').slice(0, inputs.length)
+
+				pasteArray.forEach((char, index) => {
+					;(inputs[index] as HTMLInputElement).value = char
+				})
+
+				if (pasteArray.length < inputs.length) {
+					;(inputs[pasteArray.length] as HTMLInputElement).focus()
+				}
+
+				if (pasteArray.length === inputs.length) {
+					inputs[inputs.length - 1].focus()
+				}
+			})
+
+			// On any inputs changing, put the full room code into the hidden input
+			input.addEventListener('input', () => {
+				const roomCode = Array.from(inputs)
+					.map((input) => input.value)
+					.join('')
+				const hiddenInput = document.querySelector(
+					'#roomCode .fullRoomCode'
+				) as HTMLInputElement
+				hiddenInput.value = roomCode
+			})
+		})
+	</script>
+</fieldset>

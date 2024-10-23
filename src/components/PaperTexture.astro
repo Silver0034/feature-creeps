@@ -1,0 +1,21 @@
+---
+import { Picture } from 'astro:assets'
+import texture from '@assets/paper-texture.png'
+---
+
+<style>
+	.paper-texture {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		object-fit: cover;
+		mix-blend-mode: multiply;
+	}
+</style>
+
+<Picture
+	src={texture}
+	alt='Paper texture'
+	class='paper-texture'
+	formats={['avif', 'webp', 'png']}
+/>

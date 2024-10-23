@@ -1,6 +1,41 @@
 // Fonts
-body {
-	// font-family: 'Permanent Marker', "Permanent Marker Fallback: Arial", "Permanent Marker Fallback: Roboto";
-	font-family: Alegreya, 'Alegreya Fallback: Arial',
+:root {
+	--font-heading: 'Permanent Marker', 'Permanent Marker Fallback: Arial',
+		'Permanent Marker Fallback: Roboto';
+	--font-body: Alegreya, 'Alegreya Fallback: Arial',
 		'Alegreya Fallback: Roboto';
+
+	--font-size-small: 12px;
+	--font-size-base: 16px;
+	--font-size-h3: 1.2rem;
+	--font-size-h2: 1.44rem;
+	--font-size-h1: 1.728rem;
+	font-size: var(--font-size-base);
+}
+
+body {
+	font-family: var(--font-body);
+}
+
+h1,
+.h1 {
+	font-family: var(--font-heading);
+	font-size: var(--font-size-h1);
+}
+
+h2,
+.h2 {
+	font-family: var(--font-heading);
+	font-size: var(--font-size-h2);
+}
+
+h3,
+.h3 {
+	font-family: var(--font-heading);
+	font-size: var(--font-size-h3);
+}
+
+small,
+.small {
+	font-size: var(--font-size-small);
 }

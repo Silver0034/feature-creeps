@@ -28,6 +28,10 @@ export function refreshView() {
 	const gameState = getGameStateValue()
 	const views = document.querySelectorAll('.view') as NodeListOf<HTMLElement>
 	if (!views) return
+
+	// Make the device vibrate
+	if (navigator.vibrate) navigator.vibrate([100, 25, 50])
+
 	views.forEach((view) => {
 		view.style.display = 'none'
 		const key = parseInt(view.getAttribute('data-view-key') || '0')

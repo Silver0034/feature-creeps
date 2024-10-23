@@ -1,0 +1,64 @@
+---
+export const sortOrder = 2
+const currentPlayers = 1
+const maxPlayers = 6
+const waitingMessage = 'Waiting for friends to join?'
+const linkMessage = 'Share a link!'
+const warningMessage = 'Do not start the game until all players have joined.'
+const buttonText = 'Start the game'
+
+import { Icon } from 'astro-icon/components'
+import Button from '@components/Button.astro'
+import PaperTexture from '@components/PaperTexture.astro'
+import PlayerName from '@components/PlayerName.astro'
+import PlayerFeatures from '@components/PlayerFeatures.astro'
+---
+
+<style>
+	.waitingMessage {
+		display: flex;
+		justify-content: space-between;
+		column-gap: 1em;
+		flex-wrap: wrap;
+		border-bottom: 1px solid var(--color-text);
+	}
+
+	.message {
+		text-align: center;
+		margin-block: 1em;
+	}
+</style>
+
+<PaperTexture />
+
+<header slot='header'>
+	<h1>Start game</h1>
+</header>
+
+<p class='waitingMessage'>
+	<span>{waitingMessage}</span>
+	<a href='#'>{linkMessage} <Icon name='fa6-solid:link' /></a>
+</p>
+
+<PlayerName />
+
+<PlayerFeatures />
+
+<p class='playersJoined message'>
+	<span>{currentPlayers}</span> out of <span>{maxPlayers}</span> players have joined.
+</p>
+
+<p class='message'>{warningMessage}</p>
+
+<Button id='startGame' text={buttonText} />
+
+<script>
+	// TODO - Make the button start the game
+	const startGameButton = document.getElementById(
+		'startGame'
+	) as HTMLButtonElement
+
+	startGameButton.addEventListener('click', () => {
+		console.log('Starting the game...')
+	})
+</script>

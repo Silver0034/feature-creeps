@@ -1,14 +1,26 @@
 ---
-import { getCollection } from 'astro:content'
-import type { CollectionEntry } from 'astro:content'
+import type { AstroInstance } from 'astro'
 import Layout from '@layouts/client.astro'
 import ViewDebugPanel from '@components/viewDebugPanel.astro'
-import View from '@components/View.astro'
+// import View from '@components/View.astro'
 
-const views = (await getCollection(
-	'views-client'
-)) as CollectionEntry<'views-client'>[]
-views.sort((a, b) => a.data.key - b.data.key)
+// const views = (await getCollection(
+// 	'views-client'
+// )) as CollectionEntry<'views-client'>[]
+// views.sort((a, b) => a.data.key - b.data.key)
+// glob to import all view components
+
+// Extend AstroInstance to add sortOrder
+interface AstroInstanceWithSortOrder extends AstroInstance {
+	sortOrder: number
+}
+
+const views = (await Astro.glob(
+	'@components/views-client/*.astro'
+)) as AstroInstanceWithSortOrder[]
+
+// Sort views by sortOrder
+views.sort((a, b) => a.sortOrder - b.sortOrder)
 ---
 
 <style>
@@ -21,7 +33,13 @@ views.sort((a, b) => a.data.key - b.data.key)
 </style>
 
 <Layout id='client-page'>
-	{views.map((view) => <View view={view} />)}
+	{
+		views.map((view) => (
+			<section class='view' data-view-key={view.sortOrder}>
+				<view.default />
+			</section>
+		))
+	}
 	<ViewDebugPanel views={views} slot='footer' />
 	<script>
 		import '@utilities/view-logic'

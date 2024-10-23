@@ -1,7 +1,23 @@
 @use 'css-reset';
+@use 'colors';
 @use 'typography';
 
 body {
 	padding: 0;
-	min-height: 100vh;
+	height: 100vh;
+	overflow: auto;
+	background-color: var(--color-background);
+}
+
+#content {
+	padding: 1rem;
+}
+
+svg[data-icon] {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+a {
+	color: var(--color-secondary);
 }
