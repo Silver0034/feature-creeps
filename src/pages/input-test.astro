@@ -1,0 +1,23 @@
+---
+import Layout from '@layouts/client.astro'
+import Input from '@components/Input.astro'
+---
+
+<style></style>
+
+<Layout id='client-page'>
+	<Input
+		label='This is a label'
+		name='test'
+		maxlength='10'
+		shapes={['flag-left', 'flag-right']}
+	/>
+	<Input label='This is a label' multiline name='test2' />
+	<Input
+		label='This is a label'
+		multiline
+		name='test3'
+		maxlength='50'
+		shapes={['flag-left', 'flag-right']}
+	/>
+</Layout>
