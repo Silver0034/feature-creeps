@@ -1,0 +1,302 @@
+---
+const {
+	label,
+	maxlength,
+	minlength = 0,
+	multiline = false,
+	name,
+	placeholder,
+	type = 'text',
+    shapes = [],
+} = Astro.props
+
+const accessibilityCharacterLabel = `0 out of ${maxlength} characters. Requires at least ${minlength}.`
+const classList = ['input']
+
+if (!name) throw new Error('<Input /> requires the name attribute.')
+
+if (minlength > maxlength) {
+	throw new Error('minlength cannot be greater than maxlength.')
+}
+
+if (maxlength < minlength) {
+	throw new Error('maxlength cannot be less than minlength.')
+}
+
+if (maxlength === minlength) {
+	throw new Error('maxlength cannot be equal to minlength.')
+}
+---
+
+<style>
+	.input {
+		--border-color: var(--color-text);
+		--border-color-focus: var(--color-primary);
+
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		margin: 1rem 0;
+	}
+
+	label {
+		cursor: pointer;
+        font-size: var(--font-size-small);
+	}
+
+	.expanding-area,
+    input {
+		position: relative;
+        outline: 1px solid transparent;
+		border: 1px solid var(--border-color);
+		border-radius: 0.25rem;
+		box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.2);
+		overflow: hidden;
+        min-height: 1.5rem;
+		transition:
+            border-color 0.1s ease-in-out,
+			box-shadow 0.1s ease-in-out,
+            outline 0.1s ease-in-out;
+	}
+
+	.expanding-area:focus-within,
+    input:focus {
+		outline: 2px solid var(--border-color-focus);
+		border-color: var(--border-color-focus);
+		box-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.2);
+	}
+
+    .expanding-area {
+		height: min-content;
+		font-size: 0;
+    }
+
+	textarea,
+	pre {
+		margin: 0;
+		outline: 0;
+		border: 0;
+		white-space: pre-wrap;
+		word-wrap: break-word;
+		font-size: 1rem;
+		font-family: var(--font-body);
+	}
+
+    textarea,
+    pre,
+    input {
+        padding: 0.5rem;
+    }
+
+	textarea {
+		box-sizing: border-box;
+		width: 100%;
+		height: 100px;
+		resize: vertical;
+	}
+
+	.expanding-area.active textarea {
+		position: absolute;
+		overflow: hidden;
+		top: 0;
+		left: 0;
+		height: 100%;
+		resize: none;
+	}
+
+	.expanding-area:not(.active) pre {
+		display: none;
+	}
+
+	.expanding-area.active pre {
+		visibility: hidden;
+	}
+
+	.length-display {
+		font-size: var(--font-size-small);
+		margin-top: -2em;
+		padding: 0.5em;
+		align-self: flex-end;
+        z-index: 1;
+	}
+
+    .length-display.too-short {
+        color: var(--color-error);
+    }
+
+    .length-display.full {
+        color: var(--color-success);
+    }
+
+    .shape {
+        position: absolute;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .flag-left,
+    .flag-right {
+        bottom: 0;
+        transform: translateY(0%) translateX(-50%);
+        stroke: var(--border-color);
+    }
+
+    .flag-right {
+        right: 0;
+        transform: translateY(0%) translateX(50%) rotateY(180deg);
+    }
+</style>
+
+<div class:list={classList}>
+	{label && <label for={name}>{label}</label>}
+	{
+		multiline && (
+			<div class='expanding-area'>
+                <!-- prettier-ignore -->
+				<pre><span /><br /></pre>
+				<textarea
+					id={name}
+					maxlength={maxlength}
+					minlength={minlength}
+					name={name}
+					placeholder={placeholder}
+				/>
+			</div>
+		)
+	}
+
+	{
+		!multiline && (
+			<input
+				id={name}
+				maxlength={maxlength}
+				minlength={minlength}
+				name={name}
+				placeholder={placeholder}
+				type={type}
+			/>
+		)
+	}
+
+	{
+		(maxlength || minlength > 0) && (
+			<p
+				aria-live='polite'
+				aria-label={accessibilityCharacterLabel}
+				class='length-display'
+			>
+				<span class='currentLength'>0</span>
+				{maxlength && ` / ${maxlength}`}
+				{minlength > 0 && `- Min ${minlength}`}
+			</p>
+		)
+	}
+
+    {
+        shapes.includes('flag-left') && (
+            <svg class="shape flag-left" width="16" height="40" viewBox="0 0 16 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.5228 34.5106V37.9574C15.5228 37.9574 5.62055 35.4042 5.91616 35.2766C6.21174 35.1489 8.26926 34.8941 11.089 34.7659C13.8971 34.6383 15.2272 34.5106 15.5228 34.5106Z" fill="black" fill-opacity="0.5"/>
+                <path d="M5.87399 0.498289C2.06189 0.871578 0.595703 1.5 0.595703 1.5V39.7447L15.4042 37.9544M15.4042 37.9544V34.5948C15.111 34.5948 13.7914 34.7192 11.0057 34.8436C8.20838 34.9686 6.16723 35.2169 5.87399 35.3414C5.58073 35.4658 15.4042 37.9544 15.4042 37.9544Z" stroke-width="0.255319"/>
+            </svg>
+        )
+    }
+
+    {
+        shapes.includes('flag-right') && (
+            <svg class="shape flag-right" width="16" height="40" viewBox="0 0 16 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.5228 34.5106V37.9574C15.5228 37.9574 5.62055 35.4042 5.91616 35.2766C6.21174 35.1489 8.26926 34.8941 11.089 34.7659C13.8971 34.6383 15.2272 34.5106 15.5228 34.5106Z" fill="black" fill-opacity="0.5"/>
+                <path d="M5.87399 0.498289C2.06189 0.871578 0.595703 1.5 0.595703 1.5V39.7447L15.4042 37.9544M15.4042 37.9544V34.5948C15.111 34.5948 13.7914 34.7192 11.0057 34.8436C8.20838 34.9686 6.16723 35.2169 5.87399 35.3414C5.58073 35.4658 15.4042 37.9544 15.4042 37.9544Z" stroke-width="0.255319"/>
+            </svg>
+        )
+    }
+</div>
+
+<script>
+    // Make text area automatically expand as user types
+	function copyTextareaValueToPreSpan(event: Event) {
+        if (!event.target) return
+
+		const textarea = event.target as HTMLTextAreaElement
+        if (!textarea) return
+
+		const expandingArea = textarea.closest('.expanding-area')
+		if (!expandingArea) return
+
+		const span = expandingArea.querySelector('pre span')
+		if (!span) return
+
+		span.textContent = textarea.value || ' '
+	}
+	function activateExpandingAreas() {
+		// Get all expanding areas
+		const expandingAreas = document.querySelectorAll('.expanding-area')
+
+		expandingAreas.forEach((area) => {
+			// Add event listeners to each textarea and add active class
+			const textarea = area.querySelector('textarea')
+			if (!textarea) return
+			textarea.addEventListener('input', copyTextareaValueToPreSpan)
+			area.classList.add('active')
+		})
+
+		console.log({ expandingAreas })
+	}
+	activateExpandingAreas()
+</script>
+
+<script>
+    // Update character counts
+    function updateCharacterCount(event: Event) {
+        const target = event.target as HTMLElement
+        if (!target) return
+
+        const container = target.closest('.input')
+        if (!container) return
+
+        const display = container.querySelector('.length-display')
+        if (!display) {
+            // remove the event listener and stop
+            target.removeEventListener('input', updateCharacterCount)
+            return
+        }
+
+        const currentLength = target.value.length
+
+        const currentLengthDisplay = display.querySelector('.currentLength')
+        if (currentLengthDisplay) {
+            currentLengthDisplay.textContent = currentLength.toString()
+        }
+
+        const maxlength = parseInt(target.getAttribute('maxlength') || '0')
+        const minlength = parseInt(target.getAttribute('minlength') || '0')
+
+        let ariaLabel = `Current length: ${currentLength} characters.`
+        if (maxlength) {
+            ariaLabel += ` Maximum length: ${maxlength} characters.`
+        }
+        if (minlength) {
+            ariaLabel += ` Minimum length: ${minlength} characters.`
+        }
+        display.setAttribute('aria-label', ariaLabel)
+
+        if (minlength && currentLength < minlength) {
+            display.classList.add('too-short')
+        } else {
+            display.classList.remove('too-short')
+        }
+
+        if (maxlength && currentLength >= maxlength) {
+            display.classList.add('full')
+        } else {
+            display.classList.remove('full')
+        }
+        
+    }
+    function setupCharacterCountEventListeners() {
+        const inputs = document.querySelectorAll('input, textarea')
+        inputs.forEach((input) => {
+            input.addEventListener('input', updateCharacterCount)
+        })
+    }
+    setupCharacterCountEventListeners()
+</script>

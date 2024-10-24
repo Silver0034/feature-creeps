@@ -6,6 +6,9 @@
 	--color-primary: #797d62;
 	--color-secondary: #be3737;
 	--color-tertiary: #ffbe2f;
+
+	--color-success: var(--color-primary);
+	--color-error: var(--color-secondary);
 }
 
 .color-text {
