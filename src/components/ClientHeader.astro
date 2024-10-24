@@ -14,8 +14,27 @@ import logo from '@assets/logo.png'
 
 	.logo {
 		--offset: 1em;
+		--scale-small: scale(0.99);
+		--scale-large: scale(1);
+		--translate: translateY(-0.1em);
 		margin-block-start: var(--offset);
 		margin-block-end: calc(var(--offset) * -1);
+		animation: infinite 8s breathing;
+	}
+
+	@keyframes breathing {
+		0% {
+			transform: var(--scale-small);
+		}
+		70% {
+			transform: var(--scale-large) var(--translate);
+		}
+		75% {
+			transform: var(--scale-large) var(--translate);
+		}
+		100% {
+			transform: var(--scale-small);
+		}
 	}
 </style>
 
