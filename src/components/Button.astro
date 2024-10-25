@@ -11,7 +11,6 @@ const { type, text, id, disabled } = Astro.props
 		position: relative;
 		display: block;
 		border: none;
-		outline: none;
 		background: none;
 		color: var(--text-color);
 		font-family: var(--font-heading);
@@ -20,11 +19,17 @@ const { type, text, id, disabled } = Astro.props
 		transition: transform 0.2s ease;
 		margin: 1rem auto;
 		width: 100%;
+		background-color: var(--background-color);
+		color: var(--text-color);
+		border: 1px solid var(--outline-color);
+		border-radius: 0.25rem;
+		box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.2);
 
 		&:hover,
 		&:focus {
 			--outline-color: var(--color-primary);
-			transform: rotate(-1deg) scale(1.05);
+			/* transform: rotate(-1deg); */
+			box-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.2);
 		}
 
 		&[disabled] {
@@ -35,29 +40,9 @@ const { type, text, id, disabled } = Astro.props
 			pointer-events: none;
 		}
 	}
-
-	svg {
-		position: absolute;
-		inset: 0;
-		height: 100%;
-		width: 100%;
-		fill: var(--background-color);
-		stroke: var(--outline-color);
-		z-index: -1;
-	}
 </style>
 
 <button id={id} class='button' type={type} disabled={disabled}>
 	{text}
 	<slot />
-	<svg
-		viewBox='0 0 314 50'
-		fill='none'
-		xmlns='http://www.w3.org/2000/svg'
-		preserveAspectRatio='none'
-	>
-		<path
-			d='M313 4.26656C188.299 -4.67955 123.713 7.99434 1 4.26656V44.5266C124.707 49 189.293 40.054 313 49V4.26656Z'
-		></path>
-	</svg>
 </button>

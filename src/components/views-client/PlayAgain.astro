@@ -1,0 +1,49 @@
+---
+export const sortOrder = 5
+const heading = 'Thank you for playing!'
+const message =
+	'Press "Play Again" to play with the same players, or "Go back to the main menu" to exit.'
+const startGameText = 'Play Again'
+const buttonSeperatorText = '~ or ~'
+const endGameText = 'Go back to the main menu'
+
+import { Icon } from 'astro-icon/components'
+import Button from '@components/Button.astro'
+import Input from '@components/Input.astro'
+import PlayerFeatures from '@components/PlayerFeatures.astro'
+---
+
+<style>
+	.buttonSeperator {
+		text-align: center;
+	}
+</style>
+
+<h2>{heading}</h2>
+
+<p>{message}</p>
+
+<Button id='restartGame' text={startGameText} />
+
+<p class='buttonSeperator'>{buttonSeperatorText}</p>
+
+<Button id='endGame' text={endGameText} />
+
+<script>
+	// TODO - Make the button start the game
+	const restartGameButton = document.getElementById(
+		'#restartGame'
+	) as HTMLButtonElement
+
+	restartGameButton.addEventListener('click', () => {
+		console.log('Starting the game...')
+	})
+
+	const endGameButton = document.getElementById(
+		'#endGame'
+	) as HTMLButtonElement
+
+	endGameButton.addEventListener('click', () => {
+		console.log('Going back to the main menu...')
+	})
+</script>

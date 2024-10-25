@@ -7,6 +7,8 @@ const textQr = 'Or join with QR'
 
 <style define:vars={{ roomCodeLength }}>
 	#roomCode {
+		--border-color: var(--color-text);
+		--border-color-focus: var(--color-primary);
 		--gap: 0.5em;
 		--input-font-size-min: 1rem;
 		--input-font-size-max: 5rem;
@@ -20,58 +22,56 @@ const textQr = 'Or join with QR'
 		);
 
 		position: relative;
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		column-gap: var(--gap);
+		row-gap: 0.25em;
 		margin-block: 1rem;
 		padding: 0;
 		border: none;
 
-		legend {
-			margin-block-end: 0.25rem;
+		fieldset {
+			display: contents;
 		}
 
-		.inputs {
-			display: flex;
-			gap: var(--gap);
-			margin: 0 auto;
-			text-align: center;
-			justify-content: center;
+		legend {
+			padding: 0;
+			grid-column: 1 / span 2;
 		}
+
+		.qr {
+			text-align: right;
+			grid-column: 3 / span 2;
+
+			svg {
+				margin-left: 1ch;
+			}
+		}
+
 		input {
-			width: 2ch;
+			width: 100%;
+			aspect-ratio: 3 / 4;
 			font-family: var(--font-heading);
-			font-size: clamp(
-				1rem,
-				calc(calc(80vw / calc(var(--roomCodeLength) * 1.5))),
-				5rem
-			);
+			font-size: clamp(1rem, 25vw * 0.6, 5rem);
 			text-align: center;
 			text-overflow: show;
-			outline: none;
 			text-transform: uppercase;
-			border: 1.5px solid var(--color-text);
-			border-radius: 0.2em;
-			box-shadow:
-				inset 0.25rem 0.25rem 0.5rem 0 hsl(0deg 0% 0% / 25%),
-				0.25rem 0.25rem 0.5rem 0 hsl(0deg 0% 0% / 25%);
-		}
-		label {
-			position: relative;
-			transition-duration: 0.5s;
+			outline: 2px solid transparent;
+			border: 1px solid var(--border-color);
+			border-radius: 0.25rem;
+			box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.2);
+			overflow: hidden;
+			min-height: 1.5rem;
+			transition:
+				border-color 0.1s ease-in-out,
+				box-shadow 0.1s ease-in-out,
+				outline 0.1s ease-in-out;
+			z-index: 1;
 
-			&:focus-within {
-				--outline-color: var(--color-primary);
-				transform: translateY(-0.25em) scale(1.01);
-			}
-
-			&::after {
-				content: '';
-				position: absolute;
-				display: inline-block;
-				height: 1.5px;
-				left: 0.75rem;
-				right: 0.75rem;
-				bottom: 0.5rem;
-				background-color: var(--color-primary);
-				opacity: 0.25;
+			&:focus {
+				outline-color: var(--border-color-focus);
+				border-color: var(--border-color-focus);
+				box-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.2);
 			}
 		}
 		.outline {
@@ -81,101 +81,91 @@ const textQr = 'Or join with QR'
 			width: 90%;
 			stroke-width: 1.5px;
 		}
-		.qr {
-			position: absolute;
-			right: 0;
-			top: 0;
-		}
 	}
 </style>
 
-<fieldset id='roomCode'>
-	<legend>{textLegend}</legend>
-	<!-- <a class='qr' href='#'>{textQr} <Icon name='fa6-solid:qrcode' /></a> -->
+<div id='roomCode'>
+	<fieldset>
+		<legend>{textLegend}</legend>
+		<a class='qr' href='#'>{textQr} <Icon name='fa6-solid:qrcode' /></a>
 
-	<input name='roomCode' class='fullRoomCode' type='hidden' />
+		<input name='roomCode' class='fullRoomCode' type='hidden' />
 
-	<div class='inputs'>
 		{
 			Array.from({ length: roomCodeLength }).map((_, i) => (
-				<label>
-					<input type='text' maxlength='1' class='character' />
-				</label>
+				<input type='text' maxlength='1' class='character' />
 			))
 		}
-	</div>
+	</fieldset>
+</div>
 
-	<script>
-		/*
+<script>
+	/*
     If a user inputs, tabs, delete, or arrows right move to next input.
     If they arrow left, backspace move to previous input.
     */
-		const inputs = document.querySelectorAll<HTMLInputElement>(
-			'#joinRoom .character'
-		)
-		inputs.forEach((input, i) => {
-			input.addEventListener('input', (e) => {
-				const target = e.target as HTMLInputElement
-				const isAlphaNumeric = target.value.match(/[a-zA-Z0-9]/)
-				const isLastInput = i === inputs.length - 1
+	const inputs = document.querySelectorAll<HTMLInputElement>(
+		'#joinRoom .character'
+	)
+	inputs.forEach((input, i) => {
+		input.addEventListener('input', (e) => {
+			const target = e.target as HTMLInputElement
+			const isAlphaNumeric = target.value.match(/[a-zA-Z0-9]/)
+			const isLastInput = i === inputs.length - 1
 
-				if (isAlphaNumeric && !isLastInput) {
-					inputs[i + 1].focus()
-				}
-			})
-
-			input.addEventListener('keydown', (e: KeyboardEvent) => {
-				const isFirstInput = i === 0
-				const isLastInput = i === inputs.length - 1
-
-				// Move left
-				if (
-					['ArrowLeft', 'Backspace'].includes(e.key) &&
-					!isFirstInput
-				) {
-					inputs[i - 1].focus()
-				}
-
-				// Move right
-				if (['ArrowRight', 'Delete'].includes(e.key) && !isLastInput) {
-					inputs[i + 1].focus()
-				}
-
-				// Clear inputs on delete
-				if (['Delete', 'Backspace'].includes(e.key)) {
-					e.preventDefault()
-					input.value = ''
-				}
-			})
-
-			input.addEventListener('paste', (e: ClipboardEvent) => {
-				e.preventDefault()
-				const pasteData = e.clipboardData?.getData('text') || ''
-				const pasteArray = pasteData.split('').slice(0, inputs.length)
-
-				pasteArray.forEach((char, index) => {
-					;(inputs[index] as HTMLInputElement).value = char
-				})
-
-				if (pasteArray.length < inputs.length) {
-					;(inputs[pasteArray.length] as HTMLInputElement).focus()
-				}
-
-				if (pasteArray.length === inputs.length) {
-					inputs[inputs.length - 1].focus()
-				}
-			})
-
-			// On any inputs changing, put the full room code into the hidden input
-			input.addEventListener('input', () => {
-				const roomCode = Array.from(inputs)
-					.map((input) => input.value)
-					.join('')
-				const hiddenInput = document.querySelector(
-					'#roomCode .fullRoomCode'
-				) as HTMLInputElement
-				hiddenInput.value = roomCode
-			})
+			if (isAlphaNumeric && !isLastInput) {
+				inputs[i + 1].focus()
+			}
 		})
-	</script>
-</fieldset>
+
+		input.addEventListener('keydown', (e: KeyboardEvent) => {
+			const isFirstInput = i === 0
+			const isLastInput = i === inputs.length - 1
+
+			// Move left
+			if (['ArrowLeft', 'Backspace'].includes(e.key) && !isFirstInput) {
+				inputs[i - 1].focus()
+			}
+
+			// Move right
+			if (['ArrowRight', 'Delete'].includes(e.key) && !isLastInput) {
+				inputs[i + 1].focus()
+			}
+
+			// Clear inputs on delete
+			if (['Delete', 'Backspace'].includes(e.key)) {
+				e.preventDefault()
+				input.value = ''
+			}
+		})
+
+		input.addEventListener('paste', (e: ClipboardEvent) => {
+			e.preventDefault()
+			const pasteData = e.clipboardData?.getData('text') || ''
+			const pasteArray = pasteData.split('').slice(0, inputs.length)
+
+			pasteArray.forEach((char, index) => {
+				;(inputs[index] as HTMLInputElement).value = char
+			})
+
+			if (pasteArray.length < inputs.length) {
+				;(inputs[pasteArray.length] as HTMLInputElement).focus()
+			}
+
+			if (pasteArray.length === inputs.length) {
+				inputs[inputs.length - 1].focus()
+			}
+		})
+
+		// On any inputs changing, put the full room code into the hidden input
+		input.addEventListener('input', () => {
+			const roomCode = Array.from(inputs)
+				.map((input) => input.value)
+				.join('')
+			const hiddenInput = document.querySelector(
+				'#roomCode .fullRoomCode'
+			) as HTMLInputElement
+			hiddenInput.value = roomCode
+		})
+	})
+</script>

@@ -9,7 +9,7 @@ const buttonText = 'Start the game'
 
 import { Icon } from 'astro-icon/components'
 import Button from '@components/Button.astro'
-import PlayerName from '@components/PlayerName.astro'
+import Input from '@components/Input.astro'
 import PlayerFeatures from '@components/PlayerFeatures.astro'
 ---
 
@@ -28,16 +28,20 @@ import PlayerFeatures from '@components/PlayerFeatures.astro'
 	}
 </style>
 
-<header slot='header'>
-	<h1>Start game</h1>
-</header>
-
 <p class='waitingMessage'>
 	<span>{waitingMessage}</span>
 	<a href='#'>{linkMessage} <Icon name='fa6-solid:link' /></a>
 </p>
 
-<PlayerName />
+<Input
+	disabled
+	id='start-game-player-name'
+	multiline
+	name='playerName'
+	preventLineBreaks
+	shapes={['flag-left', 'flag-right']}
+	value='{A name, that is <=50 characters long, goes here.}'
+/>
 
 <PlayerFeatures />
 

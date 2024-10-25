@@ -26,6 +26,7 @@
 		"@mlc-ai/web-llm": "^0.2.73",
 		"@types/react": "^18.3.5",
 		"@types/react-dom": "^18.3.0",
+		"animate.css": "^4.1.1",
 		"astro": "^4.16.2",
 		"astro-icon": "^1.1.1",
 		"express": "^4.20.0",

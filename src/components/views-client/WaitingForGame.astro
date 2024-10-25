@@ -2,7 +2,7 @@
 export const sortOrder = 3
 
 import Button from '@components/Button.astro'
-import PlayerName from '@components/PlayerName.astro'
+import Input from '@components/Input.astro'
 import PlayerFeatures from '@components/PlayerFeatures.astro'
 const buttonText = 'Waiting on the game...'
 ---
@@ -22,11 +22,17 @@ const buttonText = 'Waiting on the game...'
 	}
 </style>
 
-<header slot='header'>
-	<h1>Waiting for game</h1>
-</header>
+<h2>Waiting for game</h2>
 
-<PlayerName />
+<Input
+	disabled
+	id='waiting-for-game-player-name'
+	multiline
+	name='playerName'
+	preventLineBreaks
+	shapes={['flag-left', 'flag-right']}
+	value='{A name, that is <=50 characters long, goes here.}'
+/>
 
 <PlayerFeatures />
 

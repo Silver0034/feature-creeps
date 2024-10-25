@@ -5,22 +5,29 @@ const buttonText = 'Save feature'
 
 import { Icon } from 'astro-icon/components'
 import Button from '@components/Button.astro'
-import PlayerName from '@components/PlayerName.astro'
+import Input from '@components/Input.astro'
 import PlayerFeatures from '@components/PlayerFeatures.astro'
-import FeatureField from '@components/FeatureField.astro'
 ---
 
-
-
-<header slot='header'>
-	<h1>Start game</h1>
-</header>
-
-<PlayerName />
-
-<FeatureField />
+<Input
+	disabled
+	id='add-feature-player-name'
+	multiline
+	name='playerName'
+	preventLineBreaks
+	shapes={['flag-left', 'flag-right']}
+	value='{A name, that is <=50 characters long, goes here.}'
+/>
 
 <PlayerFeatures />
+
+<Input
+	id='add-feature-input'
+	label='Write a new feature for your Creep! It can be a great power, or a terrible flaw, but make sure it is unique.'
+	multiline
+	name='feature'
+	maxlength='200'
+/>
 
 <Button id='startGame' text={buttonText} />
 
