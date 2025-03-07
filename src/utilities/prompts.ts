@@ -55,7 +55,7 @@ export async function BalanceAbility(
     isStrength: boolean
 ): Promise<string> {
     const reply = await client.chat.completions.create({
-        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': FormatSchema({"type": "object", "properties": {"Strength": {"type": "string"}, "Weakness": {"type": "string"}},"required": [isStrength ? "Weakness" : "Strength"]}) }, stop: "<|end|>", messages: [
+        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': FormatSchema({ "type": "object", "properties": { "Strength": { "type": "string" }, "Weakness": { "type": "string" } }, "required": [isStrength ? "Weakness" : "Strength"] }) }, stop: "<|end|>", messages: [
             {
                 'role': 'system',
                 'content': `You are an expert in designing balanced character abilities. For each strength or weakness given, your task is to generate a corresponding weakness or strength of equal power level. The strength should be a notable advantage, while the weakness should be a significant disadvantage. The strengths and weaknesses generally should not be directly related, but they must be of equivalent impact on the character’s overall capabilities. The output should be formatted as JSON. If a strength was provided, a weakness in a field named "Weakness" should be provided. Likewise, if a weakness was provided, a strength in a field named "Strength" should be provided.
@@ -65,6 +65,24 @@ Instructions:
 2. When Given a Weakness: Generate a strength that compensates for the weakness by providing the character with a powerful advantage. This strength should enhance the character’s abilities, balancing the overall power.
 
 Examples:
+
+Strength: Masterful Swordsmanship
+Weakness: Social Ineptitude
+
+Weakness: Chronic Physical Frailty
+Strength: Exceptional Magical Prowess
+
+Strength: Unrivaled Stealth
+Weakness: Emotional Detachment
+
+Weakness: Limited Magical Affinity
+Strength: Masterful Tactical Acumen
+
+Strength: Incredible Regenerative Abilities
+Weakness: Cognitive Instability
+
+Weakness: Impulsive Temper
+Strength: Unyielding Courage
 
 Strength: Superhuman Strength
 Weakness: Crippling Anxiety
@@ -176,7 +194,7 @@ Instructions:
 Examples:
 
 Input: { "character_1": { "name": "Arden Swiftblade", "strengths": ["Superhuman speed", "Master swordsman", "Keen reflexes"], "weaknesses": ["Impatient", "Overconfident"] }, "character_2": { "name": "Morgath the Infernal", "strengths": ["Fire manipulation", "Immense strength", "Intimidating presence"], "weaknesses": ["Slow", "Susceptible to water"] } }
-Output: { "fight_description": "Arden Swiftblade zipped around Morgath, dodging flames with ease. His speed was unmatched, but his overconfidence made him reckless. When a sudden downpour weakened Morgath's fire, Arden struck swiftly, taking advantage of the giant's slow movements. In the end, Morgath crumbled, and Arden emerged victorious.", "winner": "Arden Swiftblade" }
+Output: { "fight_description": "Arden Swiftblade zipped around Morgath, dodging flames with ease. His speed was unmatched: Arden struck swiftly, taking advantage of the giant's slow movements. In the end, Morgath crumbled, and Arden emerged victorious.", "winner": "Arden Swiftblade" }
 
 Input: { "character_1": { "name": "Lady Seraphina", "strengths": ["Flight", "Healing magic", "Divine light"], "weaknesses": ["Fragile", "Limited magic reserves"] }, "character_2": { "name": "Grimgor the Unyielding", "strengths": ["Unbreakable armor", "Brute strength", "Battle tactics"], "weaknesses": ["Slow", "Easily enraged"] } }
 Output: { "fight_description": "Lady Seraphina stayed airborne, blasting Grimgor with divine light. His armor held firm, and as Seraphina tired, Grimgor's rage fueled a devastating counterattack. A well-aimed throw brought her down, and despite her healing magic, Grimgor's strength won the day.", "winner": "Grimgor the Unyielding" }
@@ -216,7 +234,10 @@ export async function GenerateEnemy(round: number): Promise<CharacterSheet> {
             'Tough, scaled hide that reduces physical damage',
             'Can emit a cloud of poison gas in a small radius'
         ],
-        weaknesses: ['Vulnerable to cold-based attacks', 'Slow in enclosed spaces, reducing agility']
+        weaknesses: [
+            'Vulnerable to cold-based attacks',
+            'Slow in enclosed spaces, reducing agility'
+        ]
     });
     const vorlok = Object.assign(new CharacterSheet(), {
         name: 'Vorlok, Devourer of Stars',
@@ -238,7 +259,10 @@ export async function GenerateEnemy(round: number): Promise<CharacterSheet> {
             'Emits powerful microwaves',
             'Contaminates its enemies with a horrid goo'
         ],
-        weaknesses: ['Powerless (yet still disgusting) when unplugged', 'Weak to cleaning supplies']
+        weaknesses: [
+            'Powerless (yet still disgusting) when unplugged',
+            'Weak to cleaning supplies'
+        ]
     });
     const alastor = Object.assign(new CharacterSheet(), {
         name: 'Alastor the Adventurer',
@@ -249,14 +273,25 @@ export async function GenerateEnemy(round: number): Promise<CharacterSheet> {
             'Brave',
             'Honorable'
         ],
-        weaknesses: ['Self-absorbed', 'Headstrong', 'Follows a rigid code of ethics, avoiding dirty paths to victory']
+        weaknesses: [
+            'Self-absorbed',
+            'Headstrong',
+            'Follows a rigid code of ethics, avoiding dirty paths to victory'
+        ]
     });
     const generic = Object.assign(new CharacterSheet(), {
         name: '[Adversary Name]',
         className: '[Class or Species]',
         level: Math.floor((state.numRounds * 10) / 20),
-        strengths: ['[Strength 1]', '[Strength 2]', '[More strengths for higher-level adversaries]'],
-        weaknesses: ['[Weakness 1]', '[More weaknesses for lower-level adversaries]']
+        strengths: [
+            '[Strength 1]',
+            '[Strength 2]',
+            '[More strengths for higher-level adversaries]'
+        ],
+        weaknesses: [
+            '[Weakness 1]',
+            '[More weaknesses for lower-level adversaries]'
+        ]
     });
     const reply = await client.chat.completions.create({
         model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': CharacterSheet.getSchema(round) }, stop: "<|end|>", messages: [
@@ -274,7 +309,7 @@ Examples:
 
 Input: Level: ${blightfang.level}, Maximum Level: ${state.numRounds}
 Output:
-{json.dumps(blightfang, cls=PlayerCardEncoder)}
+${blightfang.toJSON()}
 
 Input: Level: ${vorlok.level}, Maximum Level: ${state.numRounds}
 Output:
@@ -314,7 +349,7 @@ export async function BattleRoyale(players: CharacterSheet[]): Promise<[Characte
     
     Analyze Character Sheets: Examine the strengths, weaknesses, and personality traits of all the characters involved. Consider how these aspects might influence their interactions and the battle's outcome.
     Narrate the Battle: Write an exciting, action-packed account of the battle royale. The fight should be dynamic, with each character making meaningful contributions or suffering from their vulnerabilities. The description should include moments of tension, clever tactics, humor, or surprise when appropriate, echoing the energy of an epic final battle.
-    Determine the Winner: Based on the characters' strengths, weaknesses, and the flow of battle, logically decide who would most likely be the last one standing. This decision should reflect the characters' abilities and the narrative's progression.
+    Determine the Winner: Based on the characters' strengths, weaknesses, and the flow of battle, logically decide who would most likely be the last one standing. This decision should primarily reflect the characters' abilities but also the narrative's progression.
     Output Format: The output must be in JSON format, with a field named "battle_description" providing the detailed account of the battle, and a field named "winner" containing the name of the ultimate victor.
     
     Examples:
@@ -346,8 +381,8 @@ export async function BattleRoyale(players: CharacterSheet[]): Promise<[Characte
     }
     Output:
     {
-      "battle_description": "The battlefield crackled with tension as Arden Swiftblade dashed between opponents, his speed a blur. Morgath's flames roared, scorching the ground beneath Lady Seraphina, who took to the skies, raining divine light upon the hulking Grimgor. As Morgath's fiery onslaught met Seraphina's radiant beams, the clash of elements created a storm of fire and light. Grimgor, slow but unyielding, waded through the chaos, his armor deflecting blows that would fell lesser beings. Arden, overconfident in his agility, attempted a daring strike at Grimgor but was caught off guard by a sudden eruption of flames from Morgath. Stumbling, he found himself vulnerable to Grimgor's crushing blow, but in a twist of fate, Seraphina's dwindling magic sent a beam of divine light through Grimgor's armor, staggering him. In the end, it was Morgath's unrelenting flames that consumed the battlefield, his infernal strength overpowering the others. As the smoke cleared, Morgath stood as the last combatant, his fiery eyes burning with victory.",
-      "winner": "Morgath the Infernal"
+        "battle_description": "In the heart of an ancient, crumbling arena crisscrossed by a sacred, misty river, four legendary combatants gathered for an all-out battle royale. The air was thick with tension as Arden Swiftblade, a blur of motion with superhuman speed and masterful swordsmanship, darted across the battlefield, his every move a dance of razor-edged precision—yet his overconfidence and impatience loomed like a shadow over his brilliance. Morgath the Infernal emerged next, his intimidating presence heralded by roaring flames and immense strength. His fire manipulation set the ruins ablaze, but his sluggish movements and vulnerability to water made him an unpredictable threat. Soaring above it all was Lady Seraphina, her graceful flight and divine light weaving healing magic into the chaos. Despite her fragile form and dwindling magical reserves, she was determined to protect the innocent and bring balance to the fray. Finally, Grimgor the Unyielding stomped into the arena, his unbreakable armor and brute strength a living fortress on legs. Though his deliberate, slow pace and easily kindled rage could be exploited, his tactical mind promised a deadly precision in combat.\n\nThe battle erupted in a cascade of clashing steel and elemental fury. Arden launched a series of rapid strikes toward Morgath, who countered with sweeping arcs of fire. Arden’s swift dodges saved him, yet his impetuous taunts distracted him long enough for a colliding charge from Grimgor to nearly knock him off balance. Overhead, Lady Seraphina circled protectively, unleashing bursts of divine light that not only healed minor wounds but also momentarily dazzled Morgath, forcing him to recoil from her radiance.\n\nRecognizing the existential threat posed by Morgath’s infernal blaze, an uneasy, temporary alliance formed between Arden and Lady Seraphina. Together, they lured Morgath toward the river, a strategic gambit exploiting his well-known susceptibility to water. As Morgath advanced with a sneering confidence, his slow, lumbering steps carried him dangerously close to the flowing, sacred water. In a fateful twist, the river’s spray doused his flames, leaving him sputtering and exposed. Enraged by the setback, Morgath tried to rally, unleashing a torrent of fire that collided spectacularly with Seraphina’s divine light in a dazzling, elemental explosion.\n\nSeizing the moment, Grimgor charged with a measured, thunderous roar, his battle-hardened tactics coming to the fore. His massive blow struck Morgath squarely, sending the infernal warrior reeling toward the river. Morgath’s flames faltered under the onslaught of water and raw force, and with one final, crushing strike from Grimgor, he was hurled into the churning current, his threat extinguished.\n\nNow the battlefield narrowed to a final showdown between the nimble Arden Swiftblade, the resolute Lady Seraphina, and the indomitable Grimgor. Arden’s relentless dashes and precise swordplay battered at Grimgor’s armored defenses, yet his overzealous attacks left him vulnerable to the giant’s calculated ripostes. In a climactic exchange, Grimgor feinted a retreat only to launch a devastating counterattack. Caught off guard by the measured ferocity of his opponent, Arden was struck down, his speed no longer enough to defy Grimgor’s inexorable might.\n\nLady Seraphina, determined to use her remaining divine power, created a radiant barrier that deflected Grimgor’s next heavy blow. But the effort drained her already limited magical reserves, leaving her weakened and forced to retreat from the blood-soaked arena. As the dust settled, with the echoes of clashing steel and extinguished flames still lingering in the air, only one figure stood unchallenged amidst the ruin: Grimgor the Unyielding. His unbreakable armor, relentless strength, and calculated tactics had seen him through the treacherous battle, making him the sole victor in this epic clash of legends.",
+        "winner": "Grimgor the Unyielding"
     }`,
             },
             {

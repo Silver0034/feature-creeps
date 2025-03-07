@@ -1,12 +1,14 @@
+// TODO: Rework this to use Trystero API instead.
+
 import { CharacterSheet } from "@utilities/character-sheet";
 import { GameState, state } from "@utilities/state";
 import { Handshake } from "@utilities/web-socket";
 import { randomBytes } from "crypto";
-import { WebSocketClient } from "ws";
+import WebSocketClient from "ws";
 import SimplePeer, * as Peer from "simple-peer";
 import { IsStrength } from "@utilities/prompts"
 
-enum Role {
+export enum Role {
     Server,
     Host,
     Client,
@@ -177,13 +179,7 @@ function HostConnect(handshake: Handshake, roomId: string | null, secret: string
     };
     handshake.send(JSON.stringify(json))
 }
-function HandleHostConnect(host: WebSocketClient, msg: string) {
-    try {
-        var jsonRec = JSON.parse(msg);
-    } catch (e) {
-        console.log("Failed to parse JSON in HandleHostConnect()", e)
-        return;
-    }
+export function HandleHostConnect(host: WebSocketClient, jsonRec: any) {
     // No room ID provided. Give the host a new one.
     if (!jsonRec.fields.roomId) {
         const roomId = roomIdManager.ClaimID();
@@ -230,14 +226,12 @@ function ClientConnect(handshake: Handshake, roomId: string, name: string | null
     };
     handshake.send(JSON.stringify(json))
 }
-function HandleClientConnect(client: WebSocketClient, msg: string) {
-    try {
-        var jsonRec = JSON.parse(msg);
-    } catch (e) {
-        console.log("Failed to parse JSON in HandleClientConnect()", e)
-        return;
-    }
+export function HandleClientConnect(client: WebSocketClient, jsonRec: any) {
     randomBytes(48, function (err, buffer) {
+        const host: PeerInfo | undefined = roomManager.GetHost(jsonRec?.fields?.roomId);
+        if (!host) {
+            return;
+        }
         const secret = buffer.toString('hex');
         const [success, result] = roomManager.AddClient(client, jsonRec?.fields?.roomId, jsonRec?.fields?.name, secret)
         const jsonSend = {
@@ -260,18 +254,12 @@ function HostShareSheet(client: Peer.Instance) {
         type: "ShareSheet",
         fields: {
             role: Role.Host,
-            sheet: state.players.get(ResolveName(client)),
+            sheet: state.players.find(player => player.name === ResolveName(client)),
         },
     };
     client.send(JSON.stringify(json));
 }
-function HandleHostShareSheet(host: Peer.Instance, msg: string) {
-    try {
-        var jsonRec = JSON.parse(msg);
-    } catch (e) {
-        console.log("Failed to parse JSON in HandleHostShareSheet()", e)
-        return;
-    }
+function HandleHostShareSheet(host: Peer.Instance, jsonRec: any) {
     // TODO: For now, we assume the server will always return a valid CharacterSheet.
     return jsonRec?.fields?.sheet as CharacterSheet;
 }
@@ -286,22 +274,16 @@ function ClientShareAbility(host: Peer.Instance, ability: string, isStrength: bo
     };
     host.send(JSON.stringify(json));
 }
-async function HandleClientShareAbility(client: Peer.Instance, msg: string) {
-    try {
-        var jsonRec = JSON.parse(msg);
-    } catch (e) {
-        console.log("Failed to parse JSON in HandleClientShareAbility()", e)
-        return;
-    }
+async function HandleClientShareAbility(client: Peer.Instance, jsonRec: any) {
     const name: string = ResolveName(client);
-    let sheet = state.players.get(name);
+    let sheet = state.players.find(player => player.name === name);
     if (!sheet) {
         console.log(`Unknown player "${name}" has no character sheet.`)
         return;
     }
     const ability = jsonRec?.fields?.ability;
     if (!ability) {
-        console.log("No ability provided to HandleClientShareAbility()", msg)
+        console.log("No ability provided to HandleClientShareAbility()", jsonRec)
         return;
     }
     let isStrength: boolean | undefined = jsonRec?.fields?.isStrength;
@@ -328,13 +310,7 @@ function HostUpdateState(client: Peer.Instance) {
     };
     client.send(JSON.stringify(json));
 }
-function HandleHostUpdateState(host: Peer.Instance, msg: string) {
-    try {
-        var jsonRec = JSON.parse(msg);
-    } catch (e) {
-        console.log("Failed to parse JSON in HandleHostShareSheet()", e)
-        return;
-    }
+function HandleHostUpdateState(host: Peer.Instance, jsonRec: any) {
     return [jsonRec?.fields?.gameState, jsonRec?.fields?.round];
 }
 function ClientDisconnect(host: Peer.Instance) {
@@ -346,13 +322,7 @@ function ClientDisconnect(host: Peer.Instance) {
     };
     host.send(JSON.stringify(json));
 }
-function HandleClientDisconnect(client: Peer.Instance, msg: string) {
-    try {
-        var jsonRec = JSON.parse(msg);
-    } catch (e) {
-        console.log("Failed to parse JSON in HandleClientDisconnect()", e)
-        return;
-    }
+function HandleClientDisconnect(client: Peer.Instance, jsonRec: any) {
     const name = ResolveName(client);
     // TODO: Remove the client from the list of players connected to the server, by adjusting WebRTCHost.peers.
 }
@@ -367,12 +337,7 @@ function HostDisconnect(handshake: Handshake, roomId: string, secret: string) {
     };
     handshake.send(JSON.stringify(json));
 }
-function HandleHostDisconnect(host: WebSocketClient, msg: string): [boolean, string] {
-    try {
-        var jsonRec = JSON.parse(msg);
-    } catch (e) {
-        return [false, `Failed to parse JSON in HandleHostDisconnect(): ${e}`];
-    }
+export function HandleHostDisconnect(host: WebSocketClient, jsonRec: any): [boolean, string] {
     return roomManager.RemoveHost(jsonRec?.fields?.roomId, jsonRec?.fields?.secret);
 }
 function Heartbeat(host: Peer.Instance) {

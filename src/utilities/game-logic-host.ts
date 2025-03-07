@@ -1,3 +1,5 @@
+// TODO: Make this all functional. Do it last, after the other parts work.
+
 import { CharacterSheet } from '@utilities/character-sheet.ts'
 import { GameState, state, saveGame, loadGame, wipeGame } from '@utilities/state.ts'
 import * as prompts from "@utilities/prompts.ts"
@@ -29,7 +31,7 @@ function validate_name(name: string): string | null {
 		return 'Name is too long (>15 characters).'
 	}
 	if (name.length <= 0) {
-		return 'Name must be longer.'
+		return 'Please fill in a name.'
 	}
 	return null
 }
@@ -108,7 +110,7 @@ async function run_pvp_pairs(): Promise<void> {
 			pairs.push([state.players[i], state.players[j]])
 		}
 	}
-	// Randomize the order of the combat, to ensure fairness.
+	// Randomize the order of the combat, to avoid bias.
 	for (let i = 0; i < pairs.length; i++) {
 		pairs[i].sort(() => Math.random() - 0.5)
 	}

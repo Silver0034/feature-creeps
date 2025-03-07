@@ -63,23 +63,30 @@ export async function ListModels() {
 // All model-specified constraints are listed according to the structure listed here: https://github.com/mlc-ai/web-llm/blob/main/src/config.ts
 export async function LoadEngine() {
   try {
-    if (state.inference.engine === "local") {
-      const initProgressCallback = (report: webllm.InitProgressReport) => {
-        console.log(report);
-      };
-      client = await webllm.CreateWebWorkerMLCEngine(
-        new Worker(new URL("./llm-worker.ts", import.meta.url), { type: "module" }),
-        state.inference.modelName || "Llama-3.1-8B-Instruct-q4f32_1-MLC",
-        { initProgressCallback: initProgressCallback },
-      );
-    } else if (state.inference.engine === "API") {
-      client = new OpenAI({
-        baseURL: state.inference.apiURL,
-        apiKey: state.inference.apiKey || "sk-no-key-required",
-        dangerouslyAllowBrowser: true,
-      });
-    } else {
-      throw new Error('No engine type selected. Cannot perform inference.');
+    switch (state.inference.engine) {
+      case "local": {
+        const initProgressCallback = (report: webllm.InitProgressReport) => {
+          console.log(report);
+        };
+        client = await webllm.CreateWebWorkerMLCEngine(
+          new Worker(new URL("./llm-worker.ts", import.meta.url), { type: "module" }),
+          state.inference.modelName || "Llama-3.1-8B-Instruct-q4f32_1-MLC",
+          { initProgressCallback: initProgressCallback },
+        );
+        break;
+      }
+      case "API": {
+        client = new OpenAI({
+          baseURL: state.inference.apiURL,
+          apiKey: state.inference.apiKey || "sk-no-key-required",
+          // Bring-your-own-key pattern makes this safe.
+          dangerouslyAllowBrowser: true,
+        });
+        break;
+      }
+      default: {
+        throw new Error('No engine type selected. Cannot perform inference.');
+      }
     }
   } catch (error) {
     console.error("Error initializing client:", error);

@@ -1,5 +1,5 @@
 {
-  "name": "",
+  "name": "feature-creeps",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -13,31 +13,34 @@
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
-    "@astrojs/mdx": "^3.1.8",
-    "@astrojs/node": "^8.3.4",
-    "@astrojs/react": "^3.6.2",
+    "@astrojs/mdx": "^4.1.0",
+    "@astrojs/node": "^9.1.2",
+    "@astrojs/react": "^4.2.1",
     "@capsizecss/core": "^4.1.2",
-    "@capsizecss/metrics": "^3.2.0",
-    "@capsizecss/unpack": "^2.2.0",
+    "@capsizecss/metrics": "^3.4.0",
+    "@capsizecss/unpack": "^2.3.0",
     "@diffusionstudio/vits-web": "^1.0.3",
-    "@fontsource/alegreya": "^5.0.14",
-    "@fontsource/permanent-marker": "^5.0.13",
-    "@mlc-ai/web-llm": "^0.2.73",
-    "@types/react": "^18.3.5",
-    "@types/react-dom": "^18.3.0",
-    "astro": "^4.16.2",
-    "express": "^4.20.0",
-    "openai": "^4.58.1",
+    "@fontsource/alegreya": "^5.2.5",
+    "@fontsource/permanent-marker": "^5.2.5",
+    "@mlc-ai/web-llm": "^0.2.78",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "astro": "^5.4.2",
+    "express": "^5.0.1",
+    "kokoro-js": "^1.2.0",
+    "openai": "^4.86.2",
     "qrcode-svg": "^1.1.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "simple-peer": "^9.11.1",
-    "typescript": "^5.5.4",
-    "ws": "^8.18.0"
+    "trystero": "^0.20.1",
+    "typescript": "^5.8.2",
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "@types/simple-peer": "^9.11.8",
-    "concurrently": "^9.0.0",
-    "sass": "^1.77.8"
+    "@types/ws": "^8.18.0",
+    "concurrently": "^9.1.2",
+    "sass": "^1.85.1"
   }
 }

@@ -1,4 +1,5 @@
 // TODO: Currently untested.
+// TODO: Rebuild this to use Trystero instead of web sockets.
 
 import { Handshake } from "@utilities/web-socket";
 import SimplePeer, * as Peer from "simple-peer";

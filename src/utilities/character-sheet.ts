@@ -86,6 +86,7 @@ ${weaknessesStr}`
 
 		// Remove private fields
 		if (hideWins) {
+			// Wins may bias the AI to have characters steamroll. Remove them.
 			delete copy.wins
 		}
 

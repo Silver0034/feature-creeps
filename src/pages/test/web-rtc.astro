@@ -1,0 +1,50 @@
+---
+
+---
+
+<script>
+    import { sleep } from "openai/core.mjs";
+    import { joinRoom, selfId } from "trystero";
+    console.log(`my peer ID is ${selfId}`);
+    const config = { appId: "feature-creeps-0.0.1", password: "MuchoMaa$" };
+    const roomId = "TEST";
+    const room = joinRoom(config, roomId);
+    room.onPeerJoin((peerId) => console.log(`${peerId} joined`));
+    room.onPeerLeave((peerId) => console.log(`${peerId} left`));
+    interface DrinkData {
+      drink: string;
+      withIce: boolean;
+    }
+    function isDrinkData(data: any): data is DrinkData {
+      return (
+        typeof data === "object" &&
+        data !== null &&
+        typeof data.drink === "string" &&
+        typeof data.withIce === "boolean"
+      );
+    }
+    const [sendDrink, getDrink] = room.makeAction("drink");
+    let targetPeer: string | null = null;
+    // sendDrink({ drink: "mezcal", withIce: false });
+    getDrink((data, peerId) => {
+      try {
+        if (!isDrinkData(data)){
+          throw new Error(`Invalid data payload provided: ${data}`);
+        }
+        console.log(
+          `got a ${data.drink} with${data.withIce ? "" : "out"} ice from ${peerId}`
+        );
+        targetPeer = peerId;
+      } catch (error) {
+        console.error(error);
+      }
+      return;
+    });
+    setInterval(() => {
+      sendDrink({ drink: `Random-${Math.random()}`, withIce: true }, targetPeer);
+    }, 1000);
+    // room.leave();
+  </script>
+  
+  <p>Check the console</p>
+  
