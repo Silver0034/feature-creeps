@@ -2,7 +2,7 @@ import { state } from "@utilities/state";
 import OpenAI from 'openai';
 import * as webllm from "@mlc-ai/web-llm";
 
-let client: any;
+export let client: any;
 
 async function queryGPUFeatures(): Promise<{ isF16Supported: boolean; maxStorageBufferBindingSize: number; }> {
   // @ts-ignore
@@ -28,7 +28,7 @@ async function queryGPUFeatures(): Promise<{ isF16Supported: boolean; maxStorage
   return { isF16Supported: false, maxStorageBufferBindingSize: 0 };
 }
 
-export async function ListModels() {
+export async function listModels() {
   if (state.inference.engine != "local") {
     return []
   }
@@ -61,7 +61,7 @@ export async function ListModels() {
 // We wish to load (and switch) the model after starting the engine.
 // We also want to appropriately list only supported models from a drop-down list.
 // All model-specified constraints are listed according to the structure listed here: https://github.com/mlc-ai/web-llm/blob/main/src/config.ts
-export async function LoadEngine() {
+export async function initLlm() {
   try {
     switch (state.inference.engine) {
       case "local": {
@@ -94,17 +94,9 @@ export async function LoadEngine() {
   }
 }
 
-export function FormatSchema(schema: object): any {
+export function formatSchema(schema: object): any {
   if (state.inference.engine === "local") {
     return JSON.stringify(schema);
   }
   return schema;
 }
-
-// List available models
-// await ListModels();
-
-// Load the model
-await LoadEngine();
-
-export { client }

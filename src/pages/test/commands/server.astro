@@ -1,0 +1,29 @@
+---
+
+---
+
+<script>
+    import { selfId } from "trystero";
+    import { WebRTC } from "@utilities/web-rtc";
+    import { nameMixin } from "@utilities/web-rtc/name";
+    import { abilityMixin } from "@utilities/web-rtc/ability";
+    import { sheetMixin } from "@utilities/web-rtc/sheet";
+    import { handshakeMixin } from "@utilities/web-rtc/handshake";
+    import { updateMixin } from "@utilities/web-rtc/update";
+    import { messageMixin } from "@utilities/web-rtc/message";
+    import { state, Role } from "@utilities/state";
+  
+    state.role = Role.Host;
+    state.serverId = selfId;
+  
+    const roomId = "TEST";
+    const WebRTCServer = nameMixin(
+      abilityMixin(sheetMixin(handshakeMixin(updateMixin(messageMixin(WebRTC)))))
+    );
+    const rtc = new WebRTCServer(roomId);
+    // TODO: Make this wait for a button press.
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  </script>
+  
+  <p>Server</p>
+  

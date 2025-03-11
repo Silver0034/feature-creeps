@@ -1,13 +1,13 @@
 import { CharacterSheet } from '@utilities/character-sheet.ts'
-import { client, FormatSchema } from "@utilities/openai.ts"
+import { client, formatSchema } from "@utilities/openai.ts"
 import { state } from "@utilities/state"
 
-export async function IsStrength(
+export async function isStrength(
     character: CharacterSheet,
     ability: string
 ): Promise<boolean> {
     const reply = await client.chat.completions.create({
-        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': FormatSchema({ "type": "object", "properties": { "Rationale": { "type": "string" }, "Decision": { "type": "string", "enum": ["Strength", "Weakness"] } }, "required": ["Rationale", "Decision"] }) }, stop: "<|end|>", messages: [
+        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "Rationale": { "type": "string" }, "Decision": { "type": "string", "enum": ["Strength", "Weakness"] } }, "required": ["Rationale", "Decision"] }) }, stop: "<|end|>", messages: [
             {
                 'role': 'system',
                 'content': `You are an expert in character analysis. Your task is to evaluate a given trait and determine whether it should be classified as a strength or a weakness. Analyze the impact this trait would have on a character, considering its potential benefits and drawbacks. Provide a clear and logical rationale for your decision, and conclude with whether the trait is ultimately a strength or a weakness. Provide the output in JSON format, with a field called "Rationale" with a brief explanation why the ability is or is not helpful and a field called "Decision" containing the value of either "Strength" or "Weakness".
@@ -32,7 +32,7 @@ Decision: "Weakness"`,
             }
         ]
     });
-    console.log("IsStrength", reply)
+    console.log("isStrength", reply)
     const parsedResponse = JSON.parse(reply.choices[0].message.content);
 
     let isHelpful: boolean = true;
@@ -49,13 +49,13 @@ Decision: "Weakness"`,
     return isHelpful;
 }
 
-export async function BalanceAbility(
+export async function balanceAbility(
     character: CharacterSheet,
     ability: string,
     isStrength: boolean
 ): Promise<string> {
     const reply = await client.chat.completions.create({
-        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': FormatSchema({ "type": "object", "properties": { "Strength": { "type": "string" }, "Weakness": { "type": "string" } }, "required": [isStrength ? "Weakness" : "Strength"] }) }, stop: "<|end|>", messages: [
+        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "Strength": { "type": "string" }, "Weakness": { "type": "string" } }, "required": [isStrength ? "Weakness" : "Strength"] }) }, stop: "<|end|>", messages: [
             {
                 'role': 'system',
                 'content': `You are an expert in designing balanced character abilities. For each strength or weakness given, your task is to generate a corresponding weakness or strength of equal power level. The strength should be a notable advantage, while the weakness should be a significant disadvantage. The strengths and weaknesses generally should not be directly related, but they must be of equivalent impact on the character’s overall capabilities. The output should be formatted as JSON. If a strength was provided, a weakness in a field named "Weakness" should be provided. Likewise, if a weakness was provided, a strength in a field named "Strength" should be provided.
@@ -117,7 +117,7 @@ Strength: Reality Manipulation`,
             }
         ]
     });
-    console.log("BalanceAbility", reply)
+    console.log("balanceAbility", reply)
     const parsedResponse = JSON.parse(reply.choices[0].message.content);
 
     if (isStrength && "Weakness" in parsedResponse) {
@@ -129,34 +129,34 @@ Strength: Reality Manipulation`,
     }
 }
 
-export async function GenerateClass(character: CharacterSheet): Promise<string> {
+export async function generateClass(character: CharacterSheet): Promise<string> {
     const reply = await client.chat.completions.create({
-        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': FormatSchema({ "type": "object", "properties": { "new_className": { "type": "string" } }, "required": ["new_className"] }) }, stop: "<|end|>", messages: [
+        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "new_className": { "type": "string" } }, "required": ["new_className"] }) }, stop: "<|end|>", messages: [
             {
                 'role': 'user',
                 'content': `A character has leveled up. They have gained new strengths and weaknesses. Based on their updated character sheet, provide them with a new, more suitable class name than their current one. It may be humorous, precise, or even just clever. Be inventive! Provide the output in JSON, with a single field named "new_className", with the value containing this new class name.\n\nCharacter Sheet:\n${character.toString()}`,
             }
         ]
     });
-    console.log("GenerateClass", reply)
+    console.log("generateClass", reply)
     const parsedResponse = JSON.parse(reply.choices[0].message.content);
     return parsedResponse['new_className']
 }
 
-export async function ValidateAbility(
+export async function validateAbility(
     character: CharacterSheet,
     ability: string
 ): Promise<string | null> {
     if (ability.length > 200) return 'Ability too long (>200 characters).'
     const reply = await client.chat.completions.create({
-        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': FormatSchema({ "type": "object", "properties": { "reasoning": { "type": "string" }, "conflict": { "type": "string", "enum": ["Yes", "No"] } }, "required": ["reasoning", "conflict"] }) }, stop: "<|end|>", messages: [
+        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "reasoning": { "type": "string" }, "conflict": { "type": "string", "enum": ["Yes", "No"] } }, "required": ["reasoning", "conflict"] }) }, stop: "<|end|>", messages: [
             {
                 'role': 'user',
                 'content': `Does the following ability conflict with any of the existing abilities for this character? Respond in JSON with a field called "reasoning" with a brief explanation why the ability does nor does not conflict. Also include a field called "conflict" containing the value of either "Yes" or "No" based on whether or not the ability conflicts.\nCharacter Sheet:\n${character.toString()}\nAbility: ${ability}\n`,
             }
         ]
     });
-    console.log("ValidateAbility", reply)
+    console.log("validateAbility", reply)
     const parsedResponse = JSON.parse(reply.choices[0].message.content);
 
     let isValid: boolean = true;
@@ -175,12 +175,12 @@ export async function ValidateAbility(
     return null
 }
 
-export async function Combat(
+export async function combat(
     c1: CharacterSheet,
     c2: CharacterSheet
 ): Promise<[CharacterSheet, string]> {
     const reply = await client.chat.completions.create({
-        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': FormatSchema({ "type": "object", "properties": { "fight_description": { "type": "string" }, "winner": { "type": "string", "enum": [c1.name, c2.name] } }, "required": ["fight_description", "winner"] }) }, stop: "<|end|>", messages: [
+        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "fight_description": { "type": "string" }, "winner": { "type": "string", "enum": [c1.name, c2.name] } }, "required": ["fight_description", "winner"] }) }, stop: "<|end|>", messages: [
             {
                 'role': 'system',
                 'content': `You are an expert in narrating epic battles between characters. Given the character sheets for two combatants, craft a brief but thrilling account of their fight. Incorporate their strengths and weaknesses dynamically and only when relevant, and engage the reader with tension, creativity, humor, and other exciting literary techniques. Keep the description to a single paragraph and determine the victor based on their abilities.
@@ -208,7 +208,7 @@ Output: { "fight_description": "[Exciting and creative battle description]", "wi
             }
         ]
     });
-    console.log("Combat", reply)
+    console.log("combat", reply)
     const parsedResponse = JSON.parse(reply.choices[0].message.content);
 
     const description: string = parsedResponse.fight_description
@@ -223,7 +223,7 @@ Output: { "fight_description": "[Exciting and creative battle description]", "wi
     }
 }
 
-export async function GenerateEnemy(round: number): Promise<CharacterSheet> {
+export async function generateEnemy(round: number): Promise<CharacterSheet> {
     // TODO: Final boss monster should take existing player abilities into account and create something specifically designed to counter as many players as possible.
     const blightfang = Object.assign(new CharacterSheet(), {
         name: 'The Blightfang',
@@ -333,14 +333,14 @@ ${generic.toJSON()}`,
             }
         ]
     });
-    console.log("GenerateEnemy", reply)
+    console.log("generateEnemy", reply)
     const parsedResponse = JSON.parse(reply.choices[0].message.content);
     return parsedResponse as CharacterSheet
 }
 
-export async function BattleRoyale(players: CharacterSheet[]): Promise<[CharacterSheet | null, string]> {
+export async function battleRoyale(players: CharacterSheet[]): Promise<[CharacterSheet | null, string]> {
     const reply = await client.chat.completions.create({
-        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': FormatSchema({ "type": "object", "properties": { "battle_description": { "type": "string" }, "winner": { "type": "string", "enum": players.map(player => player.name) } }, "required": ["battle_description", "winner"] }) }, stop: "<|end|>", messages: [
+        model: state.inference.modelName, response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "battle_description": { "type": "string" }, "winner": { "type": "string", "enum": players.map(player => player.name) } }, "required": ["battle_description", "winner"] }) }, stop: "<|end|>", messages: [
             {
                 'role': 'system',
                 'content': `You are an expert in crafting epic, cinematic battles between groups of unique characters, reminiscent of the grand, climactic showdowns in blockbuster movies. Given the character sheets for a group of combatants, create a vivid and thrilling narrative of their battle royale. Each character should have a moment to shine, showcasing their strengths, quirks, and weaknesses dynamically. The story should be filled with tension, creativity, unexpected alliances, betrayals, and dramatic shifts, ensuring that every participant plays a significant role. The narrative should capture the intensity of an all-out battle where only one can emerge victorious.
@@ -391,7 +391,7 @@ export async function BattleRoyale(players: CharacterSheet[]): Promise<[Characte
             }
         ]
     });
-    console.log("BattleRoyale", reply)
+    console.log("battleRoyale", reply)
     const parsedResponse = JSON.parse(reply.choices[0].message.content);
     const description = parsedResponse.battle_description
     const winner = players.find(player => player.name === parsedResponse.winner) || null;

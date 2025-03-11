@@ -4,13 +4,13 @@
 
 <script>
   import { WebRTC } from "@utilities/web-rtc";
-  import { DrinkMixin } from "@utilities/web-rtc/drink";
+  import { drinkMixin } from "@utilities/web-rtc/drink";
 
   const roomId = "TEST";
-  const WebRTCDrink = DrinkMixin(WebRTC);
+  const WebRTCDrink = drinkMixin(WebRTC);
   const testRtc = new WebRTCDrink(roomId);
 
-  // Simulate sending a drink to everyone in the room
+  // Send a drink to everyone in the room.
   setInterval(() => {
     testRtc.sendDrink({ drink: "mezcal", withIce: false });
   }, 1000);

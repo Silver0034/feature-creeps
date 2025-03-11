@@ -4,11 +4,10 @@
   "version": "0.0.1",
   "scripts": {
     "build:fonts": "node ./scripts/font-fallbacks.js",
-    "dev": "concurrently \"npm run build:fonts && astro dev\" \"node handshake-server.js\"",
-    "start": "concurrently \"npm run build:fonts && astro dev\" \"node handshake-server.js\"",
+    "dev": "concurrently \"npm run build:fonts && astro dev\"",
+    "start": "concurrently \"npm run build:fonts && astro dev\"",
     "build": "npm run build:fonts && astro check && astro build",
     "preview": "astro preview",
-    "start-handshake": "node handshake-server.js",
     "astro": "astro"
   },
   "dependencies": {

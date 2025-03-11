@@ -3,37 +3,31 @@
 ---
 
 <script>
-    import { SystemTTS, VitsWebTTS, KokoroTTS } from "@utilities/tts";
-    import type { TTS } from "@utilities/tts";
-  
-    async function testTTS(tts: TTS, model: string | undefined = undefined) {
-      const models = await tts.listModels();
-      console.log("Available models:", models);
-  
-      if (model) {
-        await tts.selectModel(model);
-        await tts.downloadModel(model);
-      } else if (models.length > 0) {
-        await tts.selectModel(models[0]);
-        await tts.downloadModel(models[0]);
-      }
-      await tts.speak(
-        "Just so you know, I find TTS voices SUPER awesome. You should try them out!"
-      );
-      await tts.clearModels();
+  import { tts, initTts } from "@utilities/tts";
+
+  async function testTTS(type: string, voice?: string) {
+    await initTts(type, voice);
+    if (!tts) {
+      return;
     }
-  
-    // Best quality model. Runs on the GPU via WebGPU. Consumes about 700MB of VRAM.
-    const kokoro_TTS = new KokoroTTS();
-    // Medium quality model. Runs on multithreaded CPU via WASM.
-    const vits_TTS = new VitsWebTTS();
-    // Low quality model. Runs using system TTS, which is available on nearly everything and super cheap to run.
-    const system_TTS = new SystemTTS();
-  
-    await testTTS(kokoro_TTS, "Lewis");
-    await testTTS(vits_TTS, "en_GB-northern_english_male-medium");
-    await testTTS(system_TTS, "Google UK English Male");
-  </script>
-  
-  <p>Check the console</p>
-  
+    const models = await tts.listModels();
+    console.log("Available models:", models);
+
+    if (voice) {
+      await tts.downloadModel(voice);
+    } else if (models.length > 0) {
+      await tts.selectModel(models[0]);
+      await tts.downloadModel(models[0]);
+    }
+    await tts.speak(
+      "Just so you know, I find TTS voices SUPER awesome. You should try them out!"
+    );
+    await tts.clearModels();
+  }
+
+  await testTTS("kokoro", "Lewis");
+  await testTTS("vitsweb", "en_GB-northern_english_male-medium");
+  await testTTS("system", "Google UK English Male");
+</script>
+
+<p>Check the console</p>
