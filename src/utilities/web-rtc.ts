@@ -29,8 +29,9 @@ export class WebRTC {
     this.room.onPeerLeave(this.onPeerLeave);
   }
   protected onPeerJoin(peerId: string): void {
+    console.log(`${peerId} joined`);
   }
   protected onPeerLeave(peerId: string): void {
-    console.log(`${peerId} left`)
+    console.log(`${peerId} left`);
   }
 }

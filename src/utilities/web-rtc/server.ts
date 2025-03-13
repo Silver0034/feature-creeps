@@ -1,6 +1,6 @@
 import { selfId } from "trystero";
 import { CharacterSheet } from "@utilities/character-sheet";
-import { state, Role } from "@utilities/state";
+import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
 // Announces that this peer is the game server.
@@ -52,7 +52,8 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
     protected override onPeerJoin(peerId: string): void {
       super.onPeerJoin(peerId);
 
-      if (state.role == Role.Host) {
+      // TODO: Admit audience members here.
+      if (state.role == Role.Host && state.gameState == GameState.Connect) {
         console.log(`Sending server to ${peerId}`);
 
         const buffer = new Uint8Array(48);
@@ -71,6 +72,16 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
         }
 
         this.sendServer({ secret: secret }, peerId);
+      } else if (state.role = Role.Client) {
+        // Track the players that join.
+        const player = state.players.find(player => player.peerId === peerId);
+        if (!player) {
+          state.players.push({
+            sheet: new CharacterSheet(),
+            secret: "",
+            peerId: peerId
+          });
+        }
       }
     }
     private isServerData(data: any): data is ServerData {

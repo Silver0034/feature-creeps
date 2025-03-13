@@ -1,6 +1,7 @@
-import { WebRTC } from "@utilities/web-rtc";
+import { promises } from "@utilities/promises"
+import { validateAbility, balanceAbility, generateClass, combat } from "@utilities/prompts"
 import { state } from "@utilities/state";
-import { validateAbility, balanceAbility } from "@utilities/prompts"
+import { WebRTC } from "@utilities/web-rtc";
 
 type AbilityData = { ability: string };
 type AbilityFBData = { feedback: string };
@@ -26,20 +27,38 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           if (!player) {
             throw Error(`Could not find player with peerId ${peerId}`);
           }
-          const validation = await validateAbility(player.sheet, data.ability);
-          if (validation) {
+          const [isValid, validation] = await validateAbility(player.sheet, data.ability);
+          if (!isValid && validation) {
             sendAbilityFB({ feedback: validation });
             return;
           }
-          // TODO: Assuming it's a strength for now.
-          player.sheet.strengths.push(data.ability);
-          player.sheet.weaknesses.push(await balanceAbility(player.sheet, data.ability, true));
+          if (isValid) {
+            const resolver = promises.playersResolve.get(peerId);
+            if (!resolver) {
+              throw Error(`No pending ability promise found for peerId: ${peerId}`);
+            }
+            // Resolve the promise so game logic knows this player is ready.
+            resolver();
+
+            // TODO: Assuming it's a strength for now.
+            player.sheet.strengths.push(data.ability);
+            // Only add a complimentary weakness if it isn't already there.
+            if (player.sheet.strengths.length < player.sheet.weaknesses.length) {
+              player.sheet.weaknesses.push(await balanceAbility(player.sheet, data.ability, true));
+            }
+            player.sheet.level = state.round;
+            player.sheet.className = await generateClass(player.sheet);
+            // NOTE: Pushing this should ensure that battles are usually
+            // resolved in the order of the list, for faster roundBattle logic.
+            promises.battles.push(combat(player.sheet, state.enemies[state.round - 1]));
+          }
         } catch (error) {
           console.error(error);
         }
       });
       const [sendAbilityFB, getAbilityFB] = this.room.makeAction<AbilityFBData>("abilityFB");
       this.sendAbilityFB = sendAbilityFB;
+      // TODO: If possible, vibrate and make a sound if we get feedback.
       getAbilityFB(async (data, peerId) => {
         try {
           if (!this.isAbilityFBData(data)) {
@@ -47,11 +66,11 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           }
           console.log(`Got ability feedback from ${peerId}: ${data.feedback}`);
           let retryAbility: string | null = null;
-          while(!retryAbility) {
+          while (!retryAbility) {
             // TODO: Replace with GUI functionality.
             retryAbility = prompt(data.feedback);
           }
-          await sendAbility({ability: retryAbility},peerId)
+          await sendAbility({ ability: retryAbility }, peerId)
           console.log(`${data.feedback}`);
         } catch (error) {
           console.error(error);

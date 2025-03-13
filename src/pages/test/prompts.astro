@@ -10,7 +10,7 @@
     validateAbility,
     combat,
     generateEnemy,
-    battleRoyale,
+    genBattleRoyale,
   } from "@utilities/prompts";
   import { CharacterSheet } from "@utilities/character-sheet";
 
@@ -54,7 +54,7 @@
     });
 
     try {
-      const result: any = await battleRoyale([vorlok, microwave, alastor]);
+      const result: any = await genBattleRoyale([vorlok, microwave, alastor]);
       console.log(JSON.stringify(result, null, 2));
     } catch (error) {
       console.error("Error generating text:", error);

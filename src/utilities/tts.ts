@@ -152,7 +152,7 @@ export class KokoroTTS implements TTS {
     state.options.tts.voice = selectedModel;
     return selectedModel ? true : false;
   }
-  async downloadModel(modelName: string): Promise<boolean> {
+  async downloadModel(_: string): Promise<boolean> {
     console.log("Kokoro TTS does not require per-voice downloads.");
     return true;
   }
@@ -231,7 +231,6 @@ export class KokoroTTS implements TTS {
 
 // Implementation for SpeechSynthesis (System) TTS
 export class SystemTTS implements TTS {
-  private voicesLoaded: boolean = false;
   private voicesPromise: Promise<void>;
   private currentUtterance?: SpeechSynthesisUtterance;
   private selectedVoice?: SpeechSynthesisVoice;
@@ -242,11 +241,9 @@ export class SystemTTS implements TTS {
       const voices: SpeechSynthesisVoice[] = speechSynthesis.getVoices();
       if (voices && voices.length > 0) {
         // We may resolve a voice list immediately.
-        this.voicesLoaded = true;
         resolve();
       } else {
         speechSynthesis.onvoiceschanged = () => {
-          this.voicesLoaded = true;
           resolve();
         };
       }
@@ -280,7 +277,7 @@ export class SystemTTS implements TTS {
       return false;
     }
   }
-  async downloadModel(modelName: string): Promise<boolean> {
+  async downloadModel(_: string): Promise<boolean> {
     console.log("System TTS does not require model downloads.");
     return true;
   }
@@ -329,10 +326,10 @@ export class NullTTS implements TTS {
   async listModels(): Promise<string[]> {
     return [];
   }
-  async selectModel(modelName: string): Promise<boolean> {
+  async selectModel(_: string): Promise<boolean> {
     return true;
   }
-  async downloadModel(modelName: string): Promise<boolean> {
+  async downloadModel(_: string): Promise<boolean> {
     console.log("System TTS does not require model downloads.");
     return true;
   }
@@ -465,7 +462,7 @@ export async function longSpeak(text: string): Promise<void> {
   // generate additional sentences in the background, and chunks up the text
   // into small enough bits to be manageable by TTS systems with restrictive
   // character/time limits.
-  const generatePromise = generateSentences(sentences, generatedPromises);
+  generateSentences(sentences, generatedPromises);
   const speakPromise = speakSentences(sentences, generatedPromises);
   // Wait for speech to finish.
   return speakPromise;

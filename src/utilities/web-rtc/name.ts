@@ -1,3 +1,4 @@
+import AsyncLock from "async-lock";
 import { WebRTC } from "@utilities/web-rtc";
 import { state } from "@utilities/state";
 
@@ -5,6 +6,7 @@ type NameData = { name: string };
 
 export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
+    private lock = new AsyncLock();
     public sendName!: (data: NameData, peerId?: string) => void;
     constructor(...args: any[]) {
       super(...args);
@@ -13,7 +15,8 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
     private registerNameActions(): void {
       const [sendName, getName] = this.room.makeAction<NameData>("name");
       this.sendName = sendName;
-      getName((data, peerId) => {
+      getName(async (data, peerId) => {
+        // TODO: The first player to provide their name should be the VIP.
         try {
           if (!this.isNameData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
@@ -23,8 +26,17 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
           if (!player) {
             throw Error(`Could not find player with peerId ${peerId}`);
           }
-          // TODO: Names should be unique. Add a check and error handling to address this.
-          player.sheet.name = data.name;
+          // Server-side, this is a data race.
+          // If we aren't careful, multiple users could get the same name.
+          await this.lock.acquire("name-validation", async () => {
+            const validationError = this.validateName(data.name);
+            if (!validationError) {
+              player.sheet.name = data.name;
+            } else {
+              // TODO: Add name feedback if it fails to validate with the server.
+              console.warn(`Name validation failed for ${data.name}: ${validationError}`);
+            }
+          });
         } catch (error) {
           console.error(error);
         }
@@ -37,6 +49,13 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
         "name" in data &&
         typeof data.name === "string"
       );
+    }
+    // NOTE: We can do client-side name duplication validation easily if sendNames are broadcast globally, since we can store them and find them here.
+    public validateName(name: string): string | null {
+      if (state.players.some(player => player.sheet.name === name)) { return "Name already in use."; }
+      if (name.length > 15) { return "Name is too long (>15 characters)."; }
+      if (name.length <= 0) { return "Please fill in a name."; }
+      return null;
     }
   };
 }

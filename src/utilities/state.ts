@@ -24,12 +24,12 @@ export enum Role {
   Unset,
   Host,
   Client,
-  VIP,
   Audience
 }
 
 interface State {
   serverId: string | undefined,
+  vipId: string | undefined,
   role: Role,
   gameState: GameState;
   round: number;
@@ -67,6 +67,7 @@ export interface PlayerData {
 export let state: State = {
   gameState: GameState.Init as GameState,
   serverId: undefined,
+  vipId: undefined,
   role: Role.Unset as Role,
   options: {
     numRounds: 3 as number,

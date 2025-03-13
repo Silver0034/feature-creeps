@@ -25,6 +25,7 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "astro": "^5.4.2",
+    "async-lock": "^1.4.1",
     "express": "^5.0.1",
     "kokoro-js": "^1.2.0",
     "openai": "^4.86.2",
@@ -37,6 +38,7 @@
     "ws": "^8.18.1"
   },
   "devDependencies": {
+    "@types/async-lock": "^1.4.2",
     "@types/simple-peer": "^9.11.8",
     "@types/ws": "^8.18.0",
     "concurrently": "^9.1.2",
