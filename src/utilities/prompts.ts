@@ -306,7 +306,7 @@ export async function generateEnemy(level: number): Promise<CharacterSheet> {
 
 Instructions:
 1. Consider the Level: When generating the character, base its power on the provided level, with strengths proportionate to this level. At higher levels, the character should be more formidable, with more strengths and fewer weaknesses.
-2. Strengths and Weaknesses: Provide the character with powerful abilities or traits. Include weaknesses that balance its abilities at lower levels, but reduce the number of weaknesses as the character becomes more powerful. Make these traits varied yet authentic. Always include at least one weakness.
+2. Strengths and Weaknesses: Provide the character with powerful abilities or traits. Include weaknesses that balance its abilities at lower levels, but reduce the number of weaknesses as the character becomes more powerful. Make these traits varied yet authentic. Always include at least one weakness, and no more than 5 of each.
 
 Output Format: The output must be in JSON format, including the name, class name, level, strengths, and weaknesses.
 
