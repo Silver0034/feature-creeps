@@ -6,7 +6,7 @@
   import { tts, initTts } from "@utilities/tts";
 
   async function testTTS(type: string, voice?: string) {
-    await initTts(type, voice);
+    await initTts({ type: type, voice: voice });
     if (!tts) {
       return;
     }

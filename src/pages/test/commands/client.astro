@@ -3,35 +3,31 @@
 ---
 
 <script>
-    import { WebRTC } from "@utilities/web-rtc";
-    import { nameMixin } from "@utilities/web-rtc/name";
-    import { abilityMixin } from "@utilities/web-rtc/ability";
-    import { sheetMixin } from "@utilities/web-rtc/sheet";
-    import { handshakeMixin } from "@utilities/web-rtc/handshake";
-    import { updateMixin } from "@utilities/web-rtc/update";
-    import { messageMixin } from "@utilities/web-rtc/message";
-    import { state, Role } from "@utilities/state";
-  
-    state.role = Role.Client;
-  
-    const roomId = "TEST";
-    const WebRTCClient = nameMixin(
-      abilityMixin(sheetMixin(handshakeMixin(updateMixin(messageMixin(WebRTC)))))
-    );
-    const rtc = new WebRTCClient(roomId);
-    // Give some time to find the host. Ideally, this would be triggered onPeerJoin(), but I've been having trouble with that.
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    // Broadcast an empty handshake to request data from the server.
-    console.log("Requesting handshake");
-    rtc.sendHandshake({ serverId: "", secret: "" });
-  
-    let name: string | null = null;
-    // while (!name || name.length > 50 || name.length < 1) {
-    //   name = prompt("Enter your character's name.");
-    // }
-    name = "Gimdal";
-    rtc.sendName({ name: name });
-  </script>
-  
-  <p>Client</p>
-  
+  import { state, Role } from "@utilities/state";
+  import { WebRTC } from "@utilities/web-rtc";
+  import { abilityMixin } from "@utilities/web-rtc/ability";
+  import { messageMixin } from "@utilities/web-rtc/message";
+  import { nameMixin } from "@utilities/web-rtc/name";
+  import { serverMixin } from "@utilities/web-rtc/server";
+  import { sheetMixin } from "@utilities/web-rtc/sheet";
+  import { updateMixin } from "@utilities/web-rtc/update";
+
+  state.role = Role.Client;
+
+  const roomId = "TEST";
+  const WebRTCClient = abilityMixin(
+  messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC)))))
+  );
+  const rtc = new WebRTCClient(roomId);
+  // Give some time to find the host. Ideally, this would be triggered onPeerJoin(), but I've been having trouble with that.
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  let name: string | null = null;
+  // while (!name || name.length > 50 || name.length < 1) {
+  //   name = prompt("Enter your character's name.");
+  // }
+  name = "Gimdal";
+  rtc.sendName({ name: name });
+</script>
+
+<p>Client</p>

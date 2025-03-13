@@ -28,9 +28,9 @@ async function queryGPUFeatures(): Promise<{ isF16Supported: boolean; maxStorage
   return { isF16Supported: false, maxStorageBufferBindingSize: 0 };
 }
 
-export async function listModels() {
-  if (state.inference.engine != "local") {
-    return []
+export async function listModels(): Promise<webllm.ModelRecord[]> {
+  if (state.options.inference.engine != "local") {
+    return [];
   }
   const { isF16Supported, maxStorageBufferBindingSize } = await queryGPUFeatures();
   const suffix = isF16Supported ? "f16" : "f32";
@@ -50,35 +50,35 @@ export async function listModels() {
     // Sort models by largest (best?) to smallest (fast)
     .sort((a, b) => { return (b.vram_required_MB ?? 0) - (a.vram_required_MB ?? 0); });
 
-  // Log filtered and sorted models
-  console.log(model_list);
-
   return model_list
 }
 
-// NOTE: Ensure state.inference data is filled in before calling this.
+// NOTE: Ensure state.options.inference data is filled in before calling this.
 // TODO: Rework this code to function more like simple-chat: https://github.com/mlc-ai/web-llm/blob/main/examples/simple-chat-ts/src/simple_chat.ts
 // We wish to load (and switch) the model after starting the engine.
 // We also want to appropriately list only supported models from a drop-down list.
 // All model-specified constraints are listed according to the structure listed here: https://github.com/mlc-ai/web-llm/blob/main/src/config.ts
-export async function initLlm() {
+export async function initLlm(reload: boolean = true) {
+  // Do not reinitialize if the LLM engine is already started.
+  if (client && !reload) { return; }
+
   try {
-    switch (state.inference.engine) {
+    switch (state.options.inference.engine) {
       case "local": {
         const initProgressCallback = (report: webllm.InitProgressReport) => {
           console.log(report);
         };
         client = await webllm.CreateWebWorkerMLCEngine(
           new Worker(new URL("./llm-worker.ts", import.meta.url), { type: "module" }),
-          state.inference.modelName || "Llama-3.1-8B-Instruct-q4f32_1-MLC",
+          state.options.inference.modelName || "Llama-3.1-8B-Instruct-q4f32_1-MLC",
           { initProgressCallback: initProgressCallback },
         );
         break;
       }
       case "API": {
         client = new OpenAI({
-          baseURL: state.inference.apiURL,
-          apiKey: state.inference.apiKey || "sk-no-key-required",
+          baseURL: state.options.inference.apiURL,
+          apiKey: state.options.inference.apiKey || "sk-no-key-required",
           // Bring-your-own-key pattern makes this safe.
           dangerouslyAllowBrowser: true,
         });
@@ -95,7 +95,7 @@ export async function initLlm() {
 }
 
 export function formatSchema(schema: object): any {
-  if (state.inference.engine === "local") {
+  if (state.options.inference.engine === "local") {
     return JSON.stringify(schema);
   }
   return schema;

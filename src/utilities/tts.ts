@@ -11,8 +11,8 @@ export interface TTS {
   downloadModel(modelName: string): Promise<boolean>; // Download a model if necessary
   speak(text: string): Promise<void>; // Synthesize and play speech from text
   clearModels(): Promise<void>; // Clear downloaded models
-  generate(text: string): Promise<Blob>; // Synthesize speech from text
-  speakGenerated(wav: Blob): Promise<void>; // Play generated speech from text
+  generate(text: string): Promise<[any, string]>; // Synthesize speech from text
+  speakGenerated(wav: any, text: string): Promise<void>; // Play generated speech from text
 }
 
 // Implementation for VITS-Web
@@ -26,7 +26,7 @@ export class VitsWebTTS implements TTS {
     return tts_voices;
   }
   async selectModel(modelName: string): Promise<boolean> {
-    state.tts.voice = modelName;
+    state.options.tts.voice = modelName;
     console.log(`VITS-Web: Selected model ${modelName}`);
     return true;
   }
@@ -43,20 +43,22 @@ export class VitsWebTTS implements TTS {
     console.log(`VITS-Web: Downloaded model ${modelName}`);
     return true;
   }
-  async generate(text: string): Promise<any> {
-    return vits.predict({ text: text, voiceId: state.tts.voice as vits.VoiceId });
+  async generate(text: string): Promise<[Blob, string]> {
+    return Promise.all([
+      vits.predict({ text: text, voiceId: state.options.tts.voice as vits.VoiceId }),
+      Promise.resolve(text)
+    ]);
   }
-  async speakGenerated(wav: any): Promise<void> {
+  async speakGenerated(wav: any, text: string): Promise<void> {
     let audio = new Audio();
     audio.src = URL.createObjectURL(wav);
-    console.log("VITS-Web: Speaking.");
+    console.log(`VITS-Web: Speaking: ${text}`);
     audio.play();
     return new Promise((resolve, reject) => {
       if (!audio) {
         return reject("No audio is currently playing.");
       }
       audio.onended = () => {
-        console.log("VITS-Web: Finished speaking.");
         resolve();
       };
       audio.onerror = () => {
@@ -68,7 +70,7 @@ export class VitsWebTTS implements TTS {
     try {
       const wav = await vits.predict({
         text: text,
-        voiceId: state.tts.voice as vits.VoiceId,
+        voiceId: state.options.tts.voice as vits.VoiceId,
       });
       let audio = new Audio();
       audio.src = URL.createObjectURL(wav);
@@ -147,39 +149,41 @@ export class KokoroTTS implements TTS {
     console.log(
       `Kokoro: Selected model ${modelName}, internally identified as ${selectedModel}`
     );
-    state.tts.voice = selectedModel;
+    state.options.tts.voice = selectedModel;
     return selectedModel ? true : false;
   }
   async downloadModel(modelName: string): Promise<boolean> {
     console.log("Kokoro TTS does not require per-voice downloads.");
     return true;
   }
-  async generate(text: string): Promise<any> {
+  async generate(text: string): Promise<[any, string]> {
     try {
       if (!this.tts) {
         throw new Error("Kokoro failed to initialize the TTS engine.");
       }
-      return this.tts.generate(text, {
-        // @ts-ignore: Since we know the voice list is already a hack,
-        // I will consider this acceptable for now.
-        voice: state.tts.voice || "af_heart",
-      });
+      return Promise.all([
+        this.tts.generate(text, {
+          // @ts-ignore: Since we know the voice list is already a hack,
+          // I will consider this acceptable for now.
+          voice: state.options.tts.voice || "af_heart",
+        }),
+        Promise.resolve(text)
+      ]);
     } catch (error) {
-      console.error("Error selecting voice for system model:", error);
+      throw new Error(`Kokoro failed to generate text: ${text}`);
     }
   }
-  async speakGenerated(generated: any): Promise<void> {
+  async speakGenerated(generated: any, text: string): Promise<void> {
     try {
       let audio = new Audio();
       audio.src = URL.createObjectURL(generated.toBlob());
-      console.log(`Kokoro: Speaking`);
+      console.log(`Kokoro: Speaking: ${text}`);
       audio.play();
       return new Promise((resolve, reject) => {
         if (!audio) {
           return reject("No audio is currently playing.");
         }
         audio.onended = () => {
-          console.log("Kokoro: Finished speaking.");
           resolve();
         };
         audio.onerror = () => {
@@ -198,7 +202,7 @@ export class KokoroTTS implements TTS {
       const generated = await this.tts.generate(text, {
         // @ts-ignore: Since we know the voice list is already a hack,
         // I will consider this acceptable for now.
-        voice: state.tts.voice || "af_heart",
+        voice: state.options.tts.voice || "af_heart",
       });
       let audio = new Audio();
       audio.src = URL.createObjectURL(generated.toBlob());
@@ -268,7 +272,7 @@ export class SystemTTS implements TTS {
         );
       }
       this.selectedVoice = voice;
-      state.tts.voice = modelName;
+      state.options.tts.voice = modelName;
       console.log(`System TTS: Selected voice ${modelName}`);
       return true;
     } catch (error) {
@@ -280,11 +284,13 @@ export class SystemTTS implements TTS {
     console.log("System TTS does not require model downloads.");
     return true;
   }
-  async generate(text: string): Promise<any> {
-    // STUB: System TTS doesn't need to generate anything ahead of time.
-    return Promise.resolve(text);
+  async generate(text: string): Promise<[any, string]> {
+    return Promise.all([
+      Promise.resolve(undefined),
+      Promise.resolve(text)
+    ]);
   }
-  async speakGenerated(text: any): Promise<void> {
+  async speakGenerated(_: any, text: string): Promise<void> {
     return this.speak(text);
   }
   async speak(text: string): Promise<void> {
@@ -330,10 +336,13 @@ export class NullTTS implements TTS {
     console.log("System TTS does not require model downloads.");
     return true;
   }
-  async generate(text: string): Promise<any> {
-    return text;
+  async generate(text: string): Promise<[any, string]> {
+    return Promise.all([
+      Promise.resolve(undefined),
+      Promise.resolve(text)
+    ]);
   }
-  async speakGenerated(text: any): Promise<void> {
+  async speakGenerated(_: any, text: string): Promise<void> {
     return this.speak(text);
   }
   async speak(text: string): Promise<void> {
@@ -352,14 +361,21 @@ export class NullTTS implements TTS {
 
 export let tts: TTS | undefined = undefined;
 
-export async function initTts(type?: string, voice?: string) {
-  if (type) {
-    state.tts.type = type;
-  }
-  if (voice) {
-    state.tts.voice = voice;
-  }
-  switch (state.tts.type) {
+export async function initTts(options: {
+  type?: string;
+  voice?: string;
+  reload?: boolean;
+}): Promise<TTS | undefined> {
+  const { type, voice, reload = true } = options;
+  // Do not reinitialize if the TTS engine is already started.
+  if (!reload &&
+    typeof tts !== "undefined" &&
+    typeof state.options.tts.type !== "undefined" &&
+    typeof state.options.tts.voice !== "undefined") { return; }
+
+  if (type) { state.options.tts.type = type; }
+  if (voice) { state.options.tts.voice = voice; }
+  switch (state.options.tts.type) {
     case "kokoro":
       // Best quality model. Runs on the GPU via WebGPU. Consumes about 700MB of VRAM.
       tts = new KokoroTTS();
@@ -376,22 +392,23 @@ export async function initTts(type?: string, voice?: string) {
     case "none":
       // Silent model. Uses artificial pauses to give people time to read.
       tts = new NullTTS();
-      return;
+      break;
     default:
       console.error("Invalid TTS engine specified");
-      return;
+      return tts;
   }
-  if (tts && state.tts.voice) {
-    await tts.selectModel(state.tts.voice).catch((error) => {
+  if (tts && state.options.tts.voice) {
+    await tts.selectModel(state.options.tts.voice).catch((error) => {
       console.error("Error selecting voice:", error);
     });
   }
+  return tts;
 }
 
 async function generateSentences(
   sentences: string[],
-  generatedPromises: Promise<Blob>[]
-): Promise<Blob> {
+  generatedPromises: Promise<[any, string]>[]
+): Promise<[any, string]> {
   if (!tts) {
     return Promise.reject("TTS not initialized.");
   }
@@ -406,7 +423,7 @@ async function generateSentences(
 
 async function speakSentences(
   sentences: string[],
-  generatedPromises: Promise<Blob>[]
+  generatedPromises: Promise<[Blob, string]>[]
 ): Promise<void> {
   if (!tts) {
     return Promise.reject("TTS not initialized.");
@@ -416,7 +433,8 @@ async function speakSentences(
     if (speakPromise) {
       await speakPromise;
     }
-    speakPromise = tts.speakGenerated(await generatedPromises[i]);
+    const [wav, text] = await generatedPromises[i];
+    speakPromise = tts.speakGenerated(wav, text);
   }
   return speakPromise;
 }
@@ -441,7 +459,7 @@ export async function longSpeak(text: string): Promise<void> {
   }
   const sentences = chunkSpeech(text);
   // List to store generated promises for each sentence.
-  const generatedPromises: Promise<Blob>[] = [];
+  const generatedPromises: Promise<[Blob, string]>[] = [];
   // Generate and speak sentences asynchronously.
   // This allows the AI to speak as soon as the first sentence is ready,
   // generate additional sentences in the background, and chunks up the text

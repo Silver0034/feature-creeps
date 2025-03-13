@@ -9,8 +9,8 @@ import { initTts } from '@utilities/tts';
 import { initLlm } from '@utilities/openai';
 
 export enum GameState {
-  Settings = -1,
-  Init = 0,
+  Options = 1,
+  Init,
   Connect,
   Intro,
   RoundAbilities,
@@ -33,18 +33,16 @@ interface State {
   role: Role,
   gameState: GameState;
   round: number;
-  // TODO: Consider grouping these as "settings" that don't reset on game end.
+  options: OptionsConfig;
+  // Players are mapped by name.
+  players: Array<PlayerData>;
+  enemies: CharacterSheet[];
+}
+
+interface OptionsConfig {
   numRounds: number;
   inference: InferenceConfig;
   tts: TTSConfig;
-  // Players are mapped by name.
-  players: Array<{
-    sheet: CharacterSheet,
-    secret: string,
-    // NOTE: Must be updated on client reconnect.
-    peerId: string,
-  }>;
-  enemies: CharacterSheet[];
 }
 
 interface TTSConfig {
@@ -59,27 +57,32 @@ interface InferenceConfig {
   apiKey: string;
 }
 
+export interface PlayerData {
+  sheet: CharacterSheet,
+  secret: string,
+  // NOTE: Must be updated on client reconnect.
+  peerId: string
+}
+
 export let state: State = {
+  gameState: GameState.Init as GameState,
   serverId: undefined,
   role: Role.Unset as Role,
-  gameState: GameState.Init as GameState,
+  options: {
+    numRounds: 3 as number,
+    inference: {
+      engine: undefined,
+      modelName: undefined,
+      apiURL: undefined,
+      apiKey: "sk-no-key-required" as string
+    } as InferenceConfig,
+    tts: {
+      type: "none" as string,
+      voice: undefined,
+    },
+  } as OptionsConfig,
   round: 0 as number,
-  numRounds: 3 as number,
-  inference: {
-    engine: undefined,
-    modelName: undefined,
-    apiURL: undefined,
-    apiKey: "sk-no-key-required" as string
-  } as InferenceConfig,
-  tts: {
-    type: undefined,
-    voice: undefined,
-  },
-  players: [] as Array<{
-    sheet: CharacterSheet,
-    secret: string,
-    peerId: string
-  }>,
+  players: [] as Array<PlayerData>,
   enemies: [] as CharacterSheet[],
 }
 
@@ -103,11 +106,11 @@ export async function loadGame(): Promise<boolean> {
 
     // TODO: Consider relocating this to a set of settings changing functions.
     console.log('Restoring selected models...');
-    if (state.inference.engine) {
+    if (state.options.inference.engine) {
       await initLlm();
     }
-    if (state.tts.type) {
-      await initTts();
+    if (state.options.tts.type) {
+      await initTts({});
     }
 
     return true;
@@ -122,15 +125,17 @@ export function wipeGame(): void {
 }
 
 // DEBUG: Set temporary default values here.
-// state.inference.engine = "API";
-// state.inference.apiURL = "http://192.168.0.12:8080/v1";
-// state.inference.modelName = "llama3.1:70b-instruct-q4_K_S";
-// state.inference.modelName = "Phi-3-mini-4k-instruct-fp16";
+// state.options.inference.engine = "API";
+// state.options.inference.apiURL = "http://192.168.0.12:8080/v1";
 
-state.inference.engine = "local";
+state.options.inference.engine = "local";
 // Tested and known working model. No gibberish.
-state.inference.modelName = "Llama-3.1-8B-Instruct-q4f32_1-MLC";
+// state.options.inference.modelName = "Llama-3.1-8B-Instruct-q4f32_1-MLC";
+// Small, modern Llama.
+state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
 // Probably the largest supported local model. Needs 31.2GB of VRAM.
-// state.inference.modelName = "Llama-3.1-70B-Instruct-q3f16_1-MLC";
+// state.options.inference.modelName = "Llama-3.1-70B-Instruct-q3f16_1-MLC";
 // This model occasionally spouts garbage symbols. It would likely benefit from a low temperature.
-// state.inference.modelName = "Phi-3.5-mini-instruct-q4f16_1-MLC";
+// state.options.inference.modelName = "Phi-3.5-mini-instruct-q4f16_1-MLC";
+// For older GPUs.
+// state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f32_1-MLC";

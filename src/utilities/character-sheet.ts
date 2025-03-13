@@ -38,7 +38,7 @@ ${weaknessesStr}`
 
 	static getSchema(level: number): object | string {
 		// NOTE: The local inference engine only supports a subset of the required schema features. As a result, we cannot use minItems or const. This may generate slightly different character sheets than we want.
-		if (state.inference.engine === "local") {
+		if (state.options.inference.engine === "local") {
 			return `{
 				"properties": {
 					"name": { "type": "string" },
