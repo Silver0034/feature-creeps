@@ -1,10 +1,10 @@
-import * as trystero from "trystero";
+import * as trystero from "trystero/torrent";
+import * as packageJson from "package.json"
 // Note: Hard limit of 500 WebRTC connections are supported in Chrome.
 
 const config: trystero.BaseRoomConfig = {
-  // NOTE: Change this whenever the game is updated,
-  // or else there may be a client version mismatch.
-  appId: "feature-creeps-0.0.1",
+  // Set the App ID based on the host, package name, and package version.
+  appId: `${location.host}-${packageJson.name}-${packageJson.version}`,
   // NOTE: This doesn't do much, since it's plaintext in the browser. 
   // Better than nothing though.
   // TODO: Consider allowing end users to set this in the options menu.
@@ -15,6 +15,7 @@ export class WebRTC {
   room: trystero.Room;
   constructor(roomId: string) {
     console.log(`my peer ID is ${trystero.selfId}`);
+    console.log(`The app ID is ${config.appId}`);
     this.room = trystero.joinRoom(config, roomId);
     this.registerActions();
   }

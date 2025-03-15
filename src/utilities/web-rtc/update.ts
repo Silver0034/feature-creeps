@@ -1,5 +1,7 @@
 import { WebRTC } from "@utilities/web-rtc";
-import { state, GameState } from "@utilities/state";
+import { elements } from "@utilities/elements";
+import { state, GameState, Role } from "@utilities/state";
+import * as client from "@utilities/game-logic-client";
 
 type UpdateData = { state: GameState };
 
@@ -13,15 +15,37 @@ export function updateMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
     private registerUpdateActions(): void {
       const [sendUpdate, getUpdate] = this.room.makeAction<UpdateData>("update");
       this.sendUpdate = sendUpdate;
-      getUpdate((data, peerId) => {
+      getUpdate(async (data, peerId) => {
         try {
           if (!this.isUpdateData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
           }
+          // Verify that peerId is the host.
+          if (peerId !== state.hostId) {
+            throw new Error(`Received state change request from a non-host peer: ${peerId}`);
+          }
           console.log(`Got state from ${peerId}: ${data.state}`);
-          // TODO: Verify that peerId is the host.
           // Update state.
           state.gameState = data.state;
+          // Display it in the UI.
+          // NOTE: Redundant with typical client approach.
+          // if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
+
+          // Clients call their relevant methods from here.
+          if (state.role = Role.Client) {
+            switch (state.gameState) {
+              case GameState.Options: { await client.options(); break; }
+              case GameState.Init: { await client.init(); break; }
+              case GameState.Connect: { await client.connect(); break; }
+              case GameState.Intro: { await client.intro(); break; }
+              case GameState.RoundAbilities: { await client.roundAbilities(); break; }
+              case GameState.RoundBattle: { await client.roundBattle(); break; }
+              case GameState.BattleRoyale: { await client.battleRoyale(); break; }
+              case GameState.Leaderboard: { await client.leaderboard(); break; }
+              case GameState.End: { await client.end(); break; }
+              default: { throw new Error("Invalid GameState"); }
+            }
+          }
         } catch (error) {
           console.error(error);
         }

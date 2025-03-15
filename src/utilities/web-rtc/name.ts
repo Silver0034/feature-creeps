@@ -26,14 +26,14 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
           if (!player) {
             throw Error(`Could not find player with peerId ${peerId}`);
           }
-          // Server-side, this is a data race.
+          // Host-side, this is a data race.
           // If we aren't careful, multiple users could get the same name.
           await this.lock.acquire("name-validation", async () => {
             const validationError = this.validateName(data.name);
             if (!validationError) {
               player.sheet.name = data.name;
             } else {
-              // TODO: Add name feedback if it fails to validate with the server.
+              // TODO: Add name feedback if it fails to validate with the host.
               console.warn(`Name validation failed for ${data.name}: ${validationError}`);
             }
           });

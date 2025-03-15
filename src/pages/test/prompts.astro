@@ -17,10 +17,10 @@
     genBattleRoyale,
   } from "@utilities/prompts";
 
-  const llmPromise = initLlm();
-  const ttsPromise = initTts({ type: "kokoro", voice: "Heart" });
-
   state.round = 20;
+
+  const llmPromise = initLlm({engine:"local",modelName:"Llama-3.2-3B-Instruct-q4f32_1-MLC"});
+  const ttsPromise = initTts({ type: "kokoro", voice: "Heart" });
 
   async function generateText(): Promise<void> {
     let speechPromise: Promise<any> = ttsPromise;

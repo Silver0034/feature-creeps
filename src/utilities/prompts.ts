@@ -160,16 +160,16 @@ export async function validateAbility(
       }
     ]
   });
-  console.log("validateAbility", reply)
+  console.log("validateAbility", reply);
   const parsedResponse = JSON.parse(reply.choices[0].message.content);
 
   let isValid: boolean = true;
   switch (parsedResponse?.conflict) {
     case 'Yes':
-      isValid = true;
+      isValid = false;
       break;
     case 'No':
-      isValid = false;
+      isValid = true;
       break;
     default:
       throw new Error('No decision was reported in the ability validator.');
@@ -339,7 +339,7 @@ ${generic.toJSON()}`,
     ]
   });
   console.log("generateEnemy", reply)
-  const parsedResponse = JSON.parse(reply.choices[0].message.content) as CharacterSheet;
+  const parsedResponse = CharacterSheet.fromJSON(reply.choices[0].message.content);
   // Overwrite the level to match our intended target.
   parsedResponse.level = level;
   return parsedResponse

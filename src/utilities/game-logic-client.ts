@@ -1,10 +1,6 @@
-import { selfId } from "trystero";
-import { initLlm, listModels } from "@utilities/openai";
-import { promises } from "@utilities/promises"
-import { balanceAbility, generateClass, validateAbility, combat, generateEnemy, genBattleRoyale } from "@utilities/prompts";
+import { selfId } from "trystero/torrent";
+import { elements } from "@utilities/elements";
 import { state, GameState, Role } from "@utilities/state";
-import { tts, initTts, longSpeak } from "@utilities/tts";
-import type { PlayerData } from "@utilities/state";
 
 import { WebRTC } from "@utilities/web-rtc";
 import { abilityMixin } from "@utilities/web-rtc/ability";
@@ -14,8 +10,11 @@ import { serverMixin } from "@utilities/web-rtc/server";
 import { sheetMixin } from "@utilities/web-rtc/sheet";
 import { updateMixin } from "@utilities/web-rtc/update";
 
-// TODO: State logic for the client should actually be pretty different. We transition not on our own logic, but on state update calls made by the server.
-import { promptWithValidation, runStateLogic } from "@utilities/game-logic-host";
+// NOTE: Clients change state to match the server, via getUpdate().
+
+const roomDiv = document.getElementById("roomDiv") as HTMLInputElement;
+const nameDiv = document.getElementById("nameDiv") as HTMLInputElement;
+const abilityDiv = document.getElementById("abilityDiv") as HTMLInputElement;
 
 const WebRTCClient = abilityMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC))))));
 let rtc: InstanceType<typeof WebRTCClient>;
@@ -24,88 +23,126 @@ let queryStrings: Record<string, string | null>;
 
 export async function main(): Promise<void> {
   state.role = Role.Client;
+  elements.gameState = document.getElementById("gameState") as HTMLInputElement;
+  await init();
 }
 
-async function init() {
+export async function init() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
   queryStrings = new Proxy(Object.create(null), {
     get: (_, prop: string) => new URLSearchParams(window.location.search).get(prop) ?? null,
   }) as Record<string, string | null>;
+  await connect();
 }
 
-async function connect() {
-  const roomId = queryStrings.r;
+export async function connect() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
+  let roomId = queryStrings.r;
+  const roomInput = document.getElementById("roomId") as HTMLInputElement;
+  const submitRoomId = document.getElementById("submitRoomId") as HTMLButtonElement;
+  const nameInput = document.getElementById("nameInput") as HTMLInputElement;
+  const submitName = document.getElementById("submitName") as HTMLButtonElement;
+
   if (!roomId) {
-    throw Error("No room ID provided. Please enter a valid room ID and try again.");
+    // Provide a room code.
+    roomDiv.style.display = "inline";
+    await new Promise<void>((resolve) => {
+      submitRoomId.addEventListener("click", () => {
+        roomId = roomInput.value.trim();
+        resolve();
+      });
+    });
   }
-  rtc = new WebRTCClient(roomId);
+
+  // Validate the room code.
+  const validPattern = new RegExp(`^[${state.room.characters}]{${state.room.length}}$`);
+  if (roomId && validPattern.test(roomId)) {
+    state.room.roomId = roomId;
+    rtc = new WebRTCClient(state.room.roomId);
+  } else {
+    throw Error(`Invalid room code: ${roomId}`);
+  }
 
   // Provide a name.
-  let feedback = "";
-  const name = promptWithValidation<string>(
-    `${feedback}Please enter a name for your character.`,
-    (input) => {
-      // Client-side validation.
-      if (input) {
-        const validationResponse = rtc.validateName(input);
-        if (validationResponse) {
-          feedback = validationResponse + "\n";
-          return null;
-        }
-        return input;
+  nameDiv.style.display = "inline";
+  submitName.addEventListener("click", () => {
+    const input = nameInput.value.trim();
+    if (input) {
+      const validationResponse = rtc.validateName(input);
+      if (!validationResponse) {
+        rtc.sendName({ name: input });
+      } else {
+        console.warn(`Invalid name: ${validationResponse}`);
       }
-      return null;
     }
-  )
-  if (!name) { throw Error("Invalid name provided."); }
-  rtc.sendName({ name: name });
+  });
 
   // TODO: Press the start button.
+  // TODO: Make a skip mixin.
   if (state.vipId == selfId) {
 
   }
 }
 
-async function intro() {
+export async function intro() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
   // TODO: Skip intro.
-  // Will require a way to kill the speaking early.
+  // TODO: Will require a way to kill TTS playback early.
   if (state.vipId == selfId) {
 
   }
 }
 
-async function roundAbilities() {
-  const ability = promptWithValidation<string>(
-    `LEVEL UP!\nPlease enter a new ability for your character.`,
-    (input) => {
-      if (input) return input;
-      return null;
-    }
-  );
-  if (!ability) { throw Error("Invalid ability provided."); }
-  rtc.sendAbility({ ability: ability });
+export async function roundAbilities() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
+  // Show current player sheet.
+  console.log(state.players.find((player) => player.peerId == selfId)?.sheet.toString());
+
+  const abilityInput = document.getElementById("abilityInput") as HTMLInputElement;
+  const submitAbility = document.getElementById("submitAbility") as HTMLButtonElement;
+
+  // LEVEL UP!
+  // Please enter a new ability for your character:
+  abilityDiv.style.display = "inline";
+  submitAbility.addEventListener("click", () => {
+    const ability = abilityInput.value.trim();
+    if (!ability) { throw Error("Invalid ability provided."); }
+    rtc.sendAbility({ ability: ability });
+  });
+
+  // NOTE: May getAbilityFB() if this ability doesn't pass LLM validation.
+  // May have to send one in multiple times.
+
+  // TODO: Consider an LLM-generated fallback if the player can't figure out an
+  // ability in time.
 }
 
-async function roundBattle() {
-
+export async function roundBattle() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
 }
 
-async function battleRoyale() {
-
+export async function battleRoyale() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
 }
 
-async function leaderboard() {
-
+export async function leaderboard() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
 }
 
-async function end() {
+export async function end() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
   // Reset game state.
-  state.serverId = undefined;
+  state.hostId = undefined;
   state.vipId = undefined;
   state.round = 0;
   state.players = [];
   state.enemies = [];
+
+  // NOTE: Sit here forever, as the room code will no longer be valid for reuse.
 }
 
-async function options() {
-
+export async function options() {
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
+  // No options for clients yet.
+  // Maybe sound effects and vibration?
 }

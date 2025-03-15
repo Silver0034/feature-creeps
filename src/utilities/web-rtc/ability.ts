@@ -1,3 +1,4 @@
+import { promptWithValidation } from "@utilities/game-logic-host";
 import { promises } from "@utilities/promises"
 import { validateAbility, balanceAbility, generateClass, combat } from "@utilities/prompts"
 import { state } from "@utilities/state";
@@ -8,6 +9,7 @@ type AbilityFBData = { feedback: string };
 
 export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
+    private inProgress = new Set<string>();
     public sendAbility!: (data: AbilityData, peerId?: string) => void;
     public sendAbilityFB!: (data: AbilityFBData, peerId?: string) => void;
     constructor(...args: any[]) {
@@ -22,6 +24,10 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           if (!this.isAbilityData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
           }
+          if(this.inProgress.has(peerId)) {
+            throw new Error(`${peerId} sent too many abilities. Ignoring ${data.ability}`);
+          }
+          this.inProgress.add(peerId);
           console.log(`Got ability from ${peerId}: ${data.ability}`);
           const player = state.players.find(player => player.peerId === peerId);
           if (!player) {
@@ -33,6 +39,16 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             return;
           }
           if (isValid) {
+            // TODO: Assuming it's a strength for now.
+            player.sheet.strengths.push(data.ability);
+            // Only add a complimentary weakness if it isn't already there.
+            if (player.sheet.strengths.length > player.sheet.weaknesses.length) {
+              player.sheet.weaknesses.push(await balanceAbility(player.sheet, data.ability, true));
+            }
+            player.sheet.level = state.round;
+            player.sheet.className = await generateClass(player.sheet);
+
+            // Wait until all required sheet components have generated before resolving.
             const resolver = promises.playersResolve.get(peerId);
             if (!resolver) {
               throw Error(`No pending ability promise found for peerId: ${peerId}`);
@@ -40,14 +56,6 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             // Resolve the promise so game logic knows this player is ready.
             resolver();
 
-            // TODO: Assuming it's a strength for now.
-            player.sheet.strengths.push(data.ability);
-            // Only add a complimentary weakness if it isn't already there.
-            if (player.sheet.strengths.length < player.sheet.weaknesses.length) {
-              player.sheet.weaknesses.push(await balanceAbility(player.sheet, data.ability, true));
-            }
-            player.sheet.level = state.round;
-            player.sheet.className = await generateClass(player.sheet);
             // NOTE: Pushing this should ensure that battles are usually
             // resolved in the order of the list, for faster roundBattle logic.
             promises.battles.push(combat(player.sheet, state.enemies[state.round - 1]));
@@ -55,6 +63,7 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
         } catch (error) {
           console.error(error);
         }
+        this.inProgress.delete(peerId);
       });
       const [sendAbilityFB, getAbilityFB] = this.room.makeAction<AbilityFBData>("abilityFB");
       this.sendAbilityFB = sendAbilityFB;
@@ -64,14 +73,16 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           if (!this.isAbilityFBData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
           }
+          // TODO: Display this in the GUI.
           console.log(`Got ability feedback from ${peerId}: ${data.feedback}`);
-          let retryAbility: string | null = null;
-          while (!retryAbility) {
-            // TODO: Replace with GUI functionality.
-            retryAbility = prompt(data.feedback);
-          }
-          await sendAbility({ ability: retryAbility }, peerId)
-          console.log(`${data.feedback}`);
+
+          // TODO: Re-enable ability form in the GUI.
+
+          // Make sure the user knows that they need to revise their answer.
+          // TODO: Make this optional.
+          navigator.vibrate(200);
+          // TODO: Play a notification tone too.
+          // TODO: Maybe even an obnoxious flash?
         } catch (error) {
           console.error(error);
         }

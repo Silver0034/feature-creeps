@@ -4,6 +4,8 @@ type MessageData = { message: string };
 
 export function messageMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
+    // TODO: Currently unused. This would be a good way to transmit information
+    // to clients that appear outside of the console.
     public sendMessage!: (data: MessageData, peerId?: string) => void;
     constructor(...args: any[]) {
       super(...args);

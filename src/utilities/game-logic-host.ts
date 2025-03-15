@@ -1,10 +1,10 @@
-import { selfId } from "trystero";
+import { selfId } from "trystero/torrent";
+import { elements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
 import { promises } from "@utilities/promises"
-import { balanceAbility, generateClass, validateAbility, combat, generateEnemy, genBattleRoyale } from "@utilities/prompts";
+import { generateEnemy, genBattleRoyale } from "@utilities/prompts";
 import { state, GameState, Role } from "@utilities/state";
 import { tts, initTts, longSpeak } from "@utilities/tts";
-import type { PlayerData } from "@utilities/state";
 
 import { WebRTC } from "@utilities/web-rtc";
 import { abilityMixin } from "@utilities/web-rtc/ability";
@@ -44,13 +44,13 @@ export function promptWithValidation<T>(
 
 export async function main(): Promise<void> {
   state.role = Role.Host;
-  state.serverId = selfId;
+  state.hostId = selfId;
+  elements.gameState = document.getElementById("gameState") as HTMLInputElement;
+  elements.story = document.getElementById("story") as HTMLInputElement;
 
   // TODO: If we have a game in progress, restore to the appropriate game state. Ensure clients reset to that state as well. The current round must be reset because we never store battle outputs in the state, just the character sheets. We will also need to announce our new peerId to the swarm.
   // If we unwind from all called functions, go back to game start every time.
-  while (true) {
-    await runStateLogic(GameState.Init);
-  }
+  await runStateLogic(GameState.Init);
 }
 
 // TODO: This is a good function to save state in.
@@ -59,6 +59,9 @@ export async function runStateLogic(newState?: GameState) {
   // State change can be specified here, by argument, or set externally before
   // calling this function.
   if (newState) { state.gameState = newState; }
+
+  // Update the displayed game mode.
+  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
 
   if (state.role == Role.Host) {
     // Extra logic for RoundAbilities.
@@ -74,6 +77,9 @@ export async function runStateLogic(newState?: GameState) {
           promises.playersResolve.set(player.peerId, resolve);
         });
       });
+      // Make sure the next enemy is ready to go.
+      const enemy = await promises.enemies[state.round - 1];
+      state.enemies.push(enemy);
       // TODO: Save state before starting a round.
     }
     // Notify clients of state change.
@@ -99,25 +105,24 @@ async function init() {
   // TEMP: Specify some settings so we don't have to configure each time.
   state.options.tts.type = "kokoro";
   state.options.tts.voice = "Heart";
+  state.options.playIntro = false;
 
-  // Display game menu.
-  // Provide two buttons: "Start", and "Options".
-  const button = prompt("'Start' or 'Options'") as string;
-  if (button.toLowerCase() == "options") {
-    await runStateLogic(GameState.Options);
-  } else {
+  document.getElementById("startButton")?.addEventListener("click", async () => {
     // Make sure the inference engines are ready to go.
     promises.tts = initTts({ reload: false });
-    promises.llm = initLlm(false);
+    promises.llm = initLlm({ reload: false });
 
     await runStateLogic(GameState.Connect);
-  }
+  });
+  document.getElementById("optionsButton")?.addEventListener("click", async () => {
+    await runStateLogic(GameState.Options);
+  });
 }
 
 async function connect() {
   function generateRoomCode() {
-    const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const len = 6;
+    const characters = state.room.characters;
+    const len = state.room.length;
     let code = "";
     for (let i = 0; i < len; i++) {
       const randomIndex = Math.floor(Math.random() * characters.length);
@@ -128,9 +133,12 @@ async function connect() {
 
   // Generate a room code.
   // TODO: Make sure it's not already in use.
-  const roomId = generateRoomCode();
+  state.room.roomId = generateRoomCode();
+  const roomCodeElement = document.getElementById("roomCode");
+  if (roomCodeElement) roomCodeElement.textContent = state.room.roomId.toUpperCase();
+  console.log(state.room.roomId.toUpperCase());
   // Connect to the room.
-  rtc = new WebRTCServer(roomId);
+  rtc = new WebRTCServer(state.room.roomId);
 
   async function generateEnemies(): Promise<void> {
     await promises.llm;
@@ -146,35 +154,30 @@ async function connect() {
   // Names are provided in nameMixin.
 
   // Wait for start button to be hit.
-  promptWithValidation<string>(
-    "Type 'Go' to begin.",
-    (input) => {
-      if (input.toLowerCase() == "go") return input;
-      return null;
-    }
-  )
-
-  // Toss any incomplete character sheets.
-  state.players = state.players.filter(player => player.sheet.name !== "Unknown");
-
-  await runStateLogic(GameState.Intro);
+  document.getElementById("goButton")?.addEventListener("click", async () => {
+    // Toss any incomplete character sheets.
+    state.players = state.players.filter(player => player.sheet.name !== "Unknown");
+    await runStateLogic(GameState.Intro);
+  });
 }
 
 async function intro() {
-  await promises.tts;
-  // Explain game rules.
-  const explainString = "Feature Creeps is a roleplaying adventure game where players level up, add new abilities to their character sheets, and face monsters. Every round, a randomly generated Creep will appear. You'll have the chance to read their character sheet before deciding how to improve your character to face them in combat. When you add a new strength, you can write down literally anything you want, so long as it isn't in conflict with your existing abilities. Let your imagination run wild! But don't be too greedy: with every strength you add to your character, an equally harmful weakness gets added too. Keep in mind the final bonus round, where players will fight each other in a climatic battle royale. Can you survive, or will feature creep be your own undoing?";
-  // TEMP: Shorter string.
-  // const explainString = "Let the games begin!";
-  await longSpeak(explainString);
-
-  // Resolve the enemies now.
-  await promises.llm;
-  const enemies = await Promise.all(promises.enemies);
-  for (const enemy of enemies) {
-    state.enemies.push(enemy);
+  // Send player sheets at the beginning.
+  for (const player of state.players) {
+    // NOTE: We are sending every sheet to every player.
+    // We may prefer to change this in the future.
+    rtc.sendSheet({ sheet: player.sheet.toJSON(), peerId: player.peerId });
   }
 
+  await promises.tts;
+  if (state.options.playIntro) {
+    // Explain game rules.
+    const explainString = "Feature Creeps is a roleplaying adventure game where players level up, add new abilities to their character sheets, and face monsters. Every round, a randomly generated Creep will appear. You'll have the chance to read their character sheet before deciding how to improve your character to face them in combat. When you add a new strength, you can write down literally anything you want, so long as it isn't in conflict with your existing abilities. Let your imagination run wild! But don't be too greedy: with every strength you add to your character, an equally harmful weakness gets added too. Keep in mind the final bonus round, where players will fight each other in a climatic battle royale. Can you survive, or will feature creep be your own undoing?";
+    await longSpeak(explainString);
+  } else {
+    const explainString = "Let the games begin!";
+    await longSpeak(explainString);
+  }
   await runStateLogic(GameState.RoundAbilities);
 }
 
@@ -202,9 +205,17 @@ async function roundBattle() {
     console.log(`${c1.name} vs ${c2.name}`);
     console.log(c1.toString());
     console.log(c2.toString());
-    longSpeak(description);
+    await longSpeak(description);
     winner.wins += 1;
   }
+
+  // Now that the battle has resolved, provide the full sheets to each player.
+  for (const player of state.players) {
+    // NOTE: We are sending every sheet to every player.
+    // We may prefer to change this in the future.
+    rtc.sendSheet({ sheet: player.sheet.toJSON(), peerId: player.peerId });
+  }
+
   if (state.round == state.options.numRounds) {
     // Main game ended. Begin bonus round.
     await runStateLogic(GameState.BattleRoyale);
@@ -220,6 +231,7 @@ async function battleRoyale() {
   const [winner, description] = result;
   await longSpeak(description);
   if (!winner) throw Error("No winner was chosen by the model.");
+  console.log(`${winner.name} wins!`);
   winner.wins += 1;
   await runStateLogic(GameState.Leaderboard);
 }
@@ -234,6 +246,8 @@ async function leaderboard() {
   }
   // Display the winners.
   printScoreboard();
+  // Wait before transitioning to the end state.
+  await new Promise(resolve => setTimeout(resolve, 10000));
   await runStateLogic(GameState.End);
 }
 
@@ -253,103 +267,107 @@ async function end() {
 
 // Temporary options menu, since we have no GUI yet.
 async function options() {
-  const numRounds = promptWithValidation<number>(
-    `Enter number of rounds:
-Valid options: 1 or more
-Current value: ${state.options.numRounds}`,
-    (input) => {
-      const int = parseInt(input);
-      if (Number.isNaN(int)) return null;
-      if (int < VALID_OPTIONS.minRounds) return null;
-      return int;
-    }
-  );
-  if (numRounds) state.options.numRounds = numRounds;
-  console.log(`state.options.numRounds = ${state.options.numRounds}`);
+  const optionsMenu = document.getElementById('optionsMenu');
+  if (optionsMenu) { optionsMenu.style.display = 'block'; }
+  // TODO: Make controls functional.
+
+  //   const numRounds = promptWithValidation<number>(
+  //     `Enter number of rounds:
+  // Valid options: 1 or more
+  // Current value: ${state.options.numRounds}`,
+  //     (input) => {
+  //       const int = parseInt(input);
+  //       if (Number.isNaN(int)) return null;
+  //       if (int < VALID_OPTIONS.minRounds) return null;
+  //       return int;
+  //     }
+  //   );
+  //   if (numRounds) state.options.numRounds = numRounds;
+  //   console.log(`state.options.numRounds = ${state.options.numRounds}`);
 
 
-  console.log(VALID_OPTIONS.inferenceEngine);
-  const inferenceEngine = promptWithValidation<string>(
-    `Enter a valid inference engine:
-Valid options: ${JSON.stringify(VALID_OPTIONS.inferenceEngine)}
-Current value: ${state.options.inference.engine}`,
-    (input) => {
-      if (VALID_OPTIONS.inferenceEngine.includes(input)) return input;
-      return null;
-    }
-  );
-  if (inferenceEngine) state.options.inference.engine = inferenceEngine;
-  console.log(`state.options.inference.engine = ${state.options.inference.engine}`);
+  //   console.log(VALID_OPTIONS.inferenceEngine);
+  //   const inferenceEngine = promptWithValidation<string>(
+  //     `Enter a valid inference engine:
+  // Valid options: ${JSON.stringify(VALID_OPTIONS.inferenceEngine)}
+  // Current value: ${state.options.inference.engine}`,
+  //     (input) => {
+  //       if (VALID_OPTIONS.inferenceEngine.includes(input)) return input;
+  //       return null;
+  //     }
+  //   );
+  //   if (inferenceEngine) state.options.inference.engine = inferenceEngine;
+  //   console.log(`state.options.inference.engine = ${state.options.inference.engine}`);
 
 
-  if (state.options.inference.engine == "local") {
-    const models = await listModels();
-    const modelStrings = models.map(model => model.model_id);
-    console.log(modelStrings);
-    const inferenceModelName = promptWithValidation<string>(
-      `Enter A valid inference model name:
-Valid options: ${JSON.stringify(modelStrings)}
-Current value: ${state.options.inference.modelName}`,
-      (input) => {
-        if (modelStrings.includes(input)) return input;
-        return null;
-      }
-    );
-    if (inferenceModelName) state.options.inference.modelName = inferenceModelName;
-    console.log(`state.options.inference.modelName = ${state.options.inference.modelName}`);
+  //   if (state.options.inference.engine == "local") {
+  //     const models = await listModels();
+  //     const modelStrings = models.map(model => model.model_id);
+  //     console.log(modelStrings);
+  //     const inferenceModelName = promptWithValidation<string>(
+  //       `Enter A valid inference model name:
+  // Valid options: ${JSON.stringify(modelStrings)}
+  // Current value: ${state.options.inference.modelName}`,
+  //       (input) => {
+  //         if (modelStrings.includes(input)) return input;
+  //         return null;
+  //       }
+  //     );
+  //     if (inferenceModelName) state.options.inference.modelName = inferenceModelName;
+  //     console.log(`state.options.inference.modelName = ${state.options.inference.modelName}`);
 
 
-  } else if (state.options.inference.engine == "API") {
-    const inferenceApiURL = promptWithValidation<string>(
-      `Enter A valid inference API URL:
-Current value: ${state.options.inference.apiURL}`,
-      (input) => { return input; }
-    );
-    if (inferenceApiURL) state.options.inference.apiURL = inferenceApiURL;
-    console.log(`state.options.inference.apiURL = ${state.options.inference.apiURL}`);
+  //   } else if (state.options.inference.engine == "API") {
+  //     const inferenceApiURL = promptWithValidation<string>(
+  //       `Enter A valid inference API URL:
+  // Current value: ${state.options.inference.apiURL}`,
+  //       (input) => { return input; }
+  //     );
+  //     if (inferenceApiURL) state.options.inference.apiURL = inferenceApiURL;
+  //     console.log(`state.options.inference.apiURL = ${state.options.inference.apiURL}`);
 
 
-    const inferenceApiKey = promptWithValidation<string>(
-      `Enter A valid inference API key:
-			Current value: ${state.options.inference.apiKey}`,
-      (input) => { return input; }
-    );
-    if (inferenceApiKey) state.options.inference.apiKey = inferenceApiKey;
-    console.log(`state.options.inference.apiKey = ${state.options.inference.apiKey}`);
-  }
+  //     const inferenceApiKey = promptWithValidation<string>(
+  //       `Enter A valid inference API key:
+  // 			Current value: ${state.options.inference.apiKey}`,
+  //       (input) => { return input; }
+  //     );
+  //     if (inferenceApiKey) state.options.inference.apiKey = inferenceApiKey;
+  //     console.log(`state.options.inference.apiKey = ${state.options.inference.apiKey}`);
+  //   }
 
 
-  console.log(VALID_OPTIONS.ttsType);
-  const ttsType = promptWithValidation<string>(
-    `Enter the TTS engine to use:
-Valid options: ${JSON.stringify(VALID_OPTIONS.ttsType)}
-Current value: ${state.options.tts.type}`,
-    (input) => {
-      if (VALID_OPTIONS.ttsType.includes(input)) {
-        return input;
-      }
-      return null;
-    }
-  )
-  if (ttsType) state.options.tts.type = ttsType;
-  console.log(`state.options.tts.type = ${state.options.tts.type}`);
-  await initTts({});
+  //   console.log(VALID_OPTIONS.ttsType);
+  //   const ttsType = promptWithValidation<string>(
+  //     `Enter the TTS engine to use:
+  // Valid options: ${JSON.stringify(VALID_OPTIONS.ttsType)}
+  // Current value: ${state.options.tts.type}`,
+  //     (input) => {
+  //       if (VALID_OPTIONS.ttsType.includes(input)) {
+  //         return input;
+  //       }
+  //       return null;
+  //     }
+  //   )
+  //   if (ttsType) state.options.tts.type = ttsType;
+  //   console.log(`state.options.tts.type = ${state.options.tts.type}`);
+  //   await initTts({});
 
 
-  if (state.options.tts.type != "none") {
-    const ttsVoiceOptions = await tts?.listModels();
-    console.log(ttsVoiceOptions);
-    const ttsVoice = promptWithValidation<string>(
-      `Enter the TTS voice to use:
-Valid options: ${JSON.stringify(ttsVoiceOptions)}
-Current value: ${state.options.tts.voice}`,
-      (input) => {
-        if (ttsVoiceOptions && ttsVoiceOptions.includes(input)) return input;
-        return null;
-      }
-    )
-    if (ttsVoice) state.options.tts.voice = ttsVoice;
-    console.log(`state.options.tts.voice = ${state.options.tts.voice}`);
-    await initTts({});
-  }
+  //   if (state.options.tts.type != "none") {
+  //     const ttsVoiceOptions = await tts?.listModels();
+  //     console.log(ttsVoiceOptions);
+  //     const ttsVoice = promptWithValidation<string>(
+  //       `Enter the TTS voice to use:
+  // Valid options: ${JSON.stringify(ttsVoiceOptions)}
+  // Current value: ${state.options.tts.voice}`,
+  //       (input) => {
+  //         if (ttsVoiceOptions && ttsVoiceOptions.includes(input)) return input;
+  //         return null;
+  //       }
+  //     )
+  //     if (ttsVoice) state.options.tts.voice = ttsVoice;
+  //     console.log(`state.options.tts.voice = ${state.options.tts.voice}`);
+  //     await initTts({});
+  //   }
 }

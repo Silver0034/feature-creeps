@@ -3,7 +3,7 @@
 ---
 
 <script>
-  import { selfId } from "trystero";
+  import { selfId } from "trystero/torrent";
   import { state, Role } from "@utilities/state";
   import { WebRTC } from "@utilities/web-rtc";
   import { abilityMixin } from "@utilities/web-rtc/ability";
@@ -14,7 +14,7 @@
   import { updateMixin } from "@utilities/web-rtc/update";
 
   state.role = Role.Host;
-  state.serverId = selfId;
+  state.hostId = selfId;
 
   const roomId = "TEST";
   const WebRTCServer = abilityMixin(

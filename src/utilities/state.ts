@@ -28,18 +28,26 @@ export enum Role {
 }
 
 interface State {
-  serverId: string | undefined,
+  gameState: GameState;
+  room: Room,
+  hostId: string | undefined,
   vipId: string | undefined,
   role: Role,
-  gameState: GameState;
-  round: number;
   options: OptionsConfig;
+  round: number;
   // Players are mapped by name.
   players: Array<PlayerData>;
   enemies: CharacterSheet[];
 }
 
+interface Room {
+  roomId: string | undefined;
+  characters: string;
+  length: number;
+}
+
 interface OptionsConfig {
+  playIntro: boolean;
   numRounds: number;
   inference: InferenceConfig;
   tts: TTSConfig;
@@ -66,10 +74,16 @@ export interface PlayerData {
 
 export let state: State = {
   gameState: GameState.Init as GameState,
-  serverId: undefined,
+  room: {
+    roomId: undefined,
+    characters: "1234567890QWERTYUPASDFGHJKLXCVBNM",
+    length: 6,
+  },
+  hostId: undefined,
   vipId: undefined,
   role: Role.Unset as Role,
   options: {
+    playIntro: true,
     numRounds: 3 as number,
     inference: {
       engine: undefined,
@@ -108,7 +122,7 @@ export async function loadGame(): Promise<boolean> {
     // TODO: Consider relocating this to a set of settings changing functions.
     console.log('Restoring selected models...');
     if (state.options.inference.engine) {
-      await initLlm();
+      await initLlm({});
     }
     if (state.options.tts.type) {
       await initTts({});
@@ -128,10 +142,7 @@ export function wipeGame(): void {
 // DEBUG: Set temporary default values here.
 // state.options.inference.engine = "API";
 // state.options.inference.apiURL = "http://192.168.0.12:8080/v1";
-
 state.options.inference.engine = "local";
-// Tested and known working model. No gibberish.
-// state.options.inference.modelName = "Llama-3.1-8B-Instruct-q4f32_1-MLC";
 // Small, modern Llama.
 state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
 // Probably the largest supported local model. Needs 31.2GB of VRAM.

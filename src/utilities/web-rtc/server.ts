@@ -1,4 +1,4 @@
-import { selfId } from "trystero";
+import { selfId } from "trystero/torrent";
 import { CharacterSheet } from "@utilities/character-sheet";
 import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
@@ -43,7 +43,7 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           }
 
           // Keep track of the server to know when it's the server sending messages.
-          state.serverId = peerId;
+          state.hostId = peerId;
         } catch (error) {
           console.error(error);
         }

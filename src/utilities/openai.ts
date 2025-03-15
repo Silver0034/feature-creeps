@@ -58,7 +58,18 @@ export async function listModels(): Promise<webllm.ModelRecord[]> {
 // We wish to load (and switch) the model after starting the engine.
 // We also want to appropriately list only supported models from a drop-down list.
 // All model-specified constraints are listed according to the structure listed here: https://github.com/mlc-ai/web-llm/blob/main/src/config.ts
-export async function initLlm(reload: boolean = true) {
+export async function initLlm(options: {
+  engine?: string;
+  modelName?: string;
+  apiURL?: string;
+  apiKey?: string;
+  reload?: boolean;
+}): Promise<void> {
+  const { engine, modelName, apiURL, apiKey, reload = true } = options;
+  if (engine) { state.options.inference.engine = engine; }
+  if (modelName) { state.options.inference.modelName = modelName; }
+  if (apiURL) { state.options.inference.apiURL = apiURL; }
+  if (apiKey) { state.options.inference.apiKey = apiKey; }
   // Do not reinitialize if the LLM engine is already started.
   if (client && !reload) { return; }
 

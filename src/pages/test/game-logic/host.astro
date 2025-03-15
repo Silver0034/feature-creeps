@@ -1,0 +1,63 @@
+---
+
+---
+
+<script>
+  import { main } from "@utilities/game-logic-host";
+
+  await main();
+</script>
+
+<p>Server</p>
+<p>Game State: <span id="gameState"></span></p>
+<p>Room Code: <span id="roomCode">------</span></p>
+<button id="startButton">Start</button>
+<button id="optionsButton">Options</button>
+<br />
+<br />
+<button id="goButton">Go</button>
+<br />
+<br />
+<p id="story"></p>
+<br />
+<br />
+<div id="optionsMenu" style="display:none;">
+  <p>Options Menu:</p>
+  <label for="rounds">Rounds (1 or more):</label>
+  <input type="text" id="rounds" size="10" />
+  <br />
+  <br />
+  <label for="inferenceEngine">LLM Engine:</label>
+  <select id="inferenceEngine">
+    <option value="local">Local</option>
+    <option value="api">API</option>
+  </select>
+  <br />
+  <label for="inferenceModel">LLM Model:</label>
+  <select id="inferenceModel">
+    <option value="">Choose an LLM engine first.</option>
+  </select>
+  <br />
+  <label for="inferenceApiUrl">LLM API URL:</label>
+  <select id="inferenceApiUrl">
+    <option value="">Choose an LLM engine first.</option>
+  </select>
+  <br />
+  <label for="inferenceApiKey">LLM API Key:</label>
+  <select id="inferenceApiKey">
+    <option value="">Choose an LLM engine first.</option>
+  </select>
+  <br />
+  <br />
+  <label for="ttsType">TTS Engine:</label>
+  <select id="ttsType">
+    <option value="">Choose an LLM engine first.</option>
+  </select>
+  <br />
+  <label for="ttsVoice">TTS Voice:</label>
+  <select id="ttsVoice">
+    <option value="">Choose a TTS engine first.</option>
+  </select>
+  <br />
+  <button id="saveConfig">Save</button>
+</div>

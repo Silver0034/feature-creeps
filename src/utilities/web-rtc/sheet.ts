@@ -1,13 +1,13 @@
-import { selfId } from "trystero";
+import { selfId } from "trystero/torrent";
 import { WebRTC } from "@utilities/web-rtc";
 import { state } from "@utilities/state";
 import { CharacterSheet } from "@utilities/character-sheet";
 
-type SheetData = { sheet: string };
+type SheetData = { sheet: string, peerId: string };
 
 export function sheetMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
-    // NOTE: Must send using sendSheet({sheet: sheet.toJSON(false)});.
+    // NOTE: Must send using sendSheet({ sheet: player.sheet.toJSON(), peerId: player.peerId });.
     public sendSheet!: (data: SheetData, peerId?: string) => void;
     constructor(...args: any[]) {
       super(...args);
@@ -21,9 +21,9 @@ export function sheetMixin<TBase extends new (...args: any[]) => WebRTC>(Base: T
           if (!this.isSheetData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
           }
-          console.log(`Got sheet from ${peerId}: ${data.sheet}`);
-          // Update personal player sheet.
-          const player = state.players.find(player => player.peerId === selfId);
+          console.log(`Got sheet from ${peerId} for peer ${data.peerId}: ${data.sheet}`);
+          // Update player sheet.
+          const player = state.players.find(player => player.peerId === data.peerId);
           if (!player) {
             // TODO: No secret may be a problem here. We don't use the field for now though.
             state.players.push({
@@ -44,7 +44,8 @@ export function sheetMixin<TBase extends new (...args: any[]) => WebRTC>(Base: T
         typeof data === "object" &&
         data !== null &&
         "sheet" in data &&
-        Object.values(CharacterSheet).includes(data.sheet)
+        "peerId" in data &&
+        typeof data.peerId === "string"
       );
     }
   };
