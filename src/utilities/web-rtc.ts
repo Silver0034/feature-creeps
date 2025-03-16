@@ -1,4 +1,4 @@
-import * as trystero from "trystero/torrent";
+import * as trystero from "trystero/mqtt";
 import * as packageJson from "package.json"
 // Note: Hard limit of 500 WebRTC connections are supported in Chrome.
 
@@ -14,7 +14,7 @@ const config: trystero.BaseRoomConfig = {
 export class WebRTC {
   room: trystero.Room;
   constructor(roomId: string) {
-    console.log(`my peer ID is ${trystero.selfId}`);
+    console.log(`My peer ID is ${trystero.selfId}`);
     console.log(`The app ID is ${config.appId}`);
     this.room = trystero.joinRoom(config, roomId);
     this.registerActions();

@@ -2,6 +2,7 @@ import { state } from "@utilities/state"
 
 export interface CharacterSheetData {
 	name: string
+	// TODO: Gender?
 	className: string
 	level: number
 	strengths: string[]

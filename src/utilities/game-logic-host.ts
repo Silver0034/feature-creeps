@@ -1,4 +1,4 @@
-import { selfId } from "trystero/torrent";
+import { selfId } from "trystero/mqtt";
 import { elements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
 import { promises } from "@utilities/promises"
@@ -103,6 +103,7 @@ export async function runStateLogic(newState?: GameState) {
 
 async function init() {
   // TEMP: Specify some settings so we don't have to configure each time.
+  state.options.numRounds = 1;
   state.options.tts.type = "kokoro";
   state.options.tts.voice = "Heart";
   state.options.playIntro = false;

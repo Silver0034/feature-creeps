@@ -1,4 +1,4 @@
-import { selfId } from "trystero/torrent";
+import { selfId } from "trystero/mqtt";
 import { elements } from "@utilities/elements";
 import { state, GameState, Role } from "@utilities/state";
 
