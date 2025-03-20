@@ -142,7 +142,7 @@ async function connect() {
   async function makeQr(roomId: string) {
     const roomQr = document.getElementById("roomQr") as HTMLInputElement;
     const qrCode = new QRCode({
-      content: `${location.href}client/r=${roomId}`,
+      content: `${location.href}client/?r=${roomId}`,
       padding: 0,
       ecl: "M",
       join: true,
