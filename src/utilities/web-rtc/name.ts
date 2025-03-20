@@ -1,12 +1,13 @@
 import AsyncLock from "async-lock";
+import { elements } from "@utilities/elements";
+import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
-import { state } from "@utilities/state";
 
 type NameData = { name: string };
 
 export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
-    private lock = new AsyncLock();
+    private nameLock = new AsyncLock();
     public sendName!: (data: NameData, peerId?: string) => void;
     constructor(...args: any[]) {
       super(...args);
@@ -21,6 +22,12 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
           if (!this.isNameData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
           }
+          if (state.role != Role.Host) {
+            throw new Error(`Ignoring name sent by ${peerId} to a ${Role[state.role]}: ${data.name}`);
+          }
+          if (state.gameState != GameState.Connect) {
+            throw new Error(`Ignoring name sent by ${peerId} while in the ${GameState[state.gameState]} state: ${data.name}`);
+          }
           console.log(`Got name from ${peerId}: ${data.name}`);
           const player = state.players.find(player => player.peerId === peerId);
           if (!player) {
@@ -28,10 +35,15 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
           }
           // Host-side, this is a data race.
           // If we aren't careful, multiple users could get the same name.
-          await this.lock.acquire("name-validation", async () => {
+          await this.nameLock.acquire("name-validation", async () => {
             const validationError = this.validateName(data.name);
             if (!validationError) {
               player.sheet.name = data.name;
+              if (elements.playerCount != null) {
+                elements.playerCount.textContent =
+                  (parseInt(elements.playerCount.innerText) + 1)
+                    .toString();
+              }
             } else {
               // TODO: Add name feedback if it fails to validate with the host.
               console.warn(`Name validation failed for ${data.name}: ${validationError}`);

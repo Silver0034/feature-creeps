@@ -1,0 +1,29 @@
+---
+import { getCollection } from 'astro:content'
+import type { CollectionEntry } from 'astro:content'
+import Layout from '@layouts/client.astro'
+import ViewDebugPanel from '@components/viewDebugPanel.astro'
+import View from '@components/View.astro'
+
+const views = (await getCollection(
+	'views-client'
+)) as CollectionEntry<'views-client'>[]
+views.sort((a, b) => a.data.key - b.data.key)
+---
+
+<style>
+	header {
+		display: inline-block;
+		background-color: lightgray;
+		width: 100%;
+		box-sizing: border-box;
+	}
+</style>
+
+<Layout id='client-page'>
+	{views.map((view) => <View view={view} />)}
+	<ViewDebugPanel views={views} slot='footer' />
+	<script>
+		import '@utilities/view-logic'
+	</script>
+</Layout>

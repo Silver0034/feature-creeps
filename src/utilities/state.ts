@@ -61,6 +61,7 @@ interface TTSConfig {
 interface InferenceConfig {
   engine: string | undefined;
   modelName: string | undefined;
+  temperature: number;
   apiURL: string | undefined;
   apiKey: string;
 }
@@ -77,6 +78,7 @@ export let state: State = {
   room: {
     roomId: undefined,
     characters: "1234567890QWERTYUPASDFGHJKLXCVBNM",
+    // characters: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
     length: 6,
   },
   hostId: undefined,
@@ -88,6 +90,7 @@ export let state: State = {
     inference: {
       engine: undefined,
       modelName: undefined,
+      temperature: 1, // 0.7 is OpenAI default.
       apiURL: undefined,
       apiKey: "sk-no-key-required" as string
     } as InferenceConfig,
@@ -142,9 +145,9 @@ export function wipeGame(): void {
 // DEBUG: Set temporary default values here.
 // state.options.inference.engine = "API";
 // state.options.inference.apiURL = "http://192.168.0.12:8080/v1";
-state.options.inference.engine = "local";
+// state.options.inference.engine = "local";
 // Small, modern Llama.
-state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
+// state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
 // Probably the largest supported local model. Needs 31.2GB of VRAM.
 // state.options.inference.modelName = "Llama-3.1-70B-Instruct-q3f16_1-MLC";
 // This model occasionally spouts garbage symbols. It would likely benefit from a low temperature.

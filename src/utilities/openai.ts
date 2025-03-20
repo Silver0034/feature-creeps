@@ -40,7 +40,15 @@ export async function listModels(): Promise<webllm.ModelRecord[]> {
   // const restrictModels = (gpuVendor.length != 0 && mobileVendors.has(gpuVendor)) ||
   //   maxStorageBufferBindingSize <= androidMaxStorageBufferBindingSize;
 
-  var model_list = webllm.prebuiltAppConfig.model_list
+  let model_list = webllm.prebuiltAppConfig.model_list;
+
+  // Filter out legacy models.
+  const cutoffIndex = model_list.findIndex(model => model.model_id === "Llama-3.1-70B-Instruct-q3f16_1-MLC");
+  if (cutoffIndex !== -1) {
+    model_list = model_list.slice(0, cutoffIndex);
+  }
+
+  model_list = model_list
     // Filter out models too large to fit in VRAM
     .filter(model => { return model.vram_required_MB ?? 0 <= vram_limit; })
     // Filter to models supporting low resource requirements

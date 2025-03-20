@@ -1,5 +1,6 @@
 import { selfId } from "trystero/mqtt";
 import { CharacterSheet } from "@utilities/character-sheet";
+import { elements } from "@utilities/elements";
 import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
@@ -24,11 +25,13 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           if (!this.isServerData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
           }
+          if (state.role != Role.Client) {
+            throw new Error(`Ignoring server info sent by ${peerId} to a ${Role[state.role]}: ${data.secret}`);
+          }
           console.log(`${peerId} is the server: ${JSON.stringify(data)}`);
 
-          if (state.role == Role.Host) {
-            console.log(`${peerId} is trying to impersonate the server.`);
-          }
+          // Hide the room code entry. We have found a working room.
+          if (elements.roomDiv) { elements.roomDiv.style.display = "none"; }
 
           // Store the secret in case we need to verify our identity to the server later.
           const player = state.players.find(player => player.peerId === selfId);

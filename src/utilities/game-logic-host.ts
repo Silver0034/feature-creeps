@@ -1,3 +1,4 @@
+import QRCode from "qrcode-svg";
 import { selfId } from "trystero/mqtt";
 import { elements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
@@ -13,6 +14,15 @@ import { nameMixin } from "@utilities/web-rtc/name";
 import { serverMixin } from "@utilities/web-rtc/server";
 import { sheetMixin } from "@utilities/web-rtc/sheet";
 import { updateMixin } from "@utilities/web-rtc/update";
+import type { CharacterSheet } from "./character-sheet";
+
+// TEMP: Specify some settings so we don't have to configure each time.
+state.options.numRounds = 3;
+state.options.tts.type = "kokoro";
+state.options.tts.voice = "Lewis";
+state.options.inference.engine = "local";
+state.options.inference.modelName = "gemma-2-9b-it-q4f16_1-MLC";
+// state.options.playIntro = false;
 
 const WebRTCServer = abilityMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC))))));
 let rtc: InstanceType<typeof WebRTCServer>;
@@ -20,33 +30,25 @@ let rtc: InstanceType<typeof WebRTCServer>;
 // Constants for valid options.
 const VALID_OPTIONS = {
   minRounds: 1,
-  inferenceEngine: ["local", "API"],
-  ttsType: ["kokoro", "vitsweb", "system", "none"],
+  inferenceEngine: [
+    ["local", "WebLLM (WebGPU)"],
+    ["API", "OpenAI Compatible API"],
+  ] as [string, string][],
+  ttsType: [
+    ["kokoro", "Kokoro TTS (WebGPU)"],
+    ["kokoroWasm", "Kokoro TTS (Wasm)"],
+    ["vitsweb", "VITS Web"],
+    ["system", "Web Speech API"],
+    ["none", "None"]
+  ] as [string, string][],
 };
-
-type OptionPromptResult<T> = T | null;
-
-export function promptWithValidation<T>(
-  promptMessage: string,
-  validator: (input: string) => T | null
-): OptionPromptResult<T> {
-  const userInput = prompt(promptMessage);
-  if (!userInput) {
-    return null;
-  }
-  const validatedValue = validator(userInput);
-  if (validatedValue !== null) {
-    return validatedValue;
-  }
-  console.log("Please try again.");
-  return promptWithValidation(promptMessage, validator);
-}
 
 export async function main(): Promise<void> {
   state.role = Role.Host;
   state.hostId = selfId;
   elements.gameState = document.getElementById("gameState") as HTMLInputElement;
   elements.story = document.getElementById("story") as HTMLInputElement;
+  elements.playerCount = document.getElementById("playerCount") as HTMLElement;
 
   // TODO: If we have a game in progress, restore to the appropriate game state. Ensure clients reset to that state as well. The current round must be reset because we never store battle outputs in the state, just the character sheets. We will also need to announce our new peerId to the swarm.
   // If we unwind from all called functions, go back to game start every time.
@@ -61,7 +63,18 @@ export async function runStateLogic(newState?: GameState) {
   if (newState) { state.gameState = newState; }
 
   // Update the displayed game mode.
-  if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
+  //  (${state.round}/${state.options.numRounds}) will not display the right thing yet, but we do want this.
+  if (elements.gameState) { elements.gameState.textContent = `${GameState[state.gameState]}`; }
+
+  // Update the UI.
+  // TODO: Use the content views instead.
+  for (const key in GameState) {
+    if (!isNaN(Number(key))) { continue; }
+    const gameState = GameState[key as keyof typeof GameState];
+    const div = document.getElementById(GameState[gameState]) as HTMLInputElement;
+    if (!div) { continue; }
+    div.style.display = gameState === state.gameState ? "block" : "none";
+  }
 
   if (state.role == Role.Host) {
     // Extra logic for RoundAbilities.
@@ -102,12 +115,6 @@ export async function runStateLogic(newState?: GameState) {
 }
 
 async function init() {
-  // TEMP: Specify some settings so we don't have to configure each time.
-  state.options.numRounds = 1;
-  state.options.tts.type = "kokoro";
-  state.options.tts.voice = "Heart";
-  state.options.playIntro = false;
-
   document.getElementById("startButton")?.addEventListener("click", async () => {
     // Make sure the inference engines are ready to go.
     promises.tts = initTts({ reload: false });
@@ -132,23 +139,39 @@ async function connect() {
     return code;
   }
 
+  async function makeQr(roomId: string) {
+    const roomQr = document.getElementById("roomQr") as HTMLInputElement;
+    const qrCode = new QRCode({
+      content: `https://${location.host}/client/r=${roomId}`,
+      padding: 0,
+      ecl: "M",
+      join: true,
+      container: "svg"
+    });
+    roomQr.innerHTML = qrCode.svg();
+    roomQr.style.display = "block";
+  }
+
   // Generate a room code.
   // TODO: Make sure it's not already in use.
   state.room.roomId = generateRoomCode();
   const roomCodeElement = document.getElementById("roomCode");
   if (roomCodeElement) roomCodeElement.textContent = state.room.roomId.toUpperCase();
+  makeQr(state.room.roomId);
   console.log(state.room.roomId.toUpperCase());
   // Connect to the room.
   rtc = new WebRTCServer(state.room.roomId);
-
+  
   async function generateEnemies(): Promise<void> {
-    await promises.llm;
     // Pre-generate our enemies.
     for (let round = 0; round < state.options.numRounds; round++) {
-      promises.enemies.push(generateEnemy(round + 1));
+      promises.enemies.push((async (): Promise<CharacterSheet> => {
+        await promises.llm;
+        return generateEnemy(round + 1);
+      })());
     }
   }
-  generateEnemies();
+  await generateEnemies();
 
   // Wait for players to connect.
   // New players are created in serverMixin.
@@ -171,14 +194,19 @@ async function intro() {
   }
 
   await promises.tts;
+  let explainString = "";
   if (state.options.playIntro) {
     // Explain game rules.
-    const explainString = "Feature Creeps is a roleplaying adventure game where players level up, add new abilities to their character sheets, and face monsters. Every round, a randomly generated Creep will appear. You'll have the chance to read their character sheet before deciding how to improve your character to face them in combat. When you add a new strength, you can write down literally anything you want, so long as it isn't in conflict with your existing abilities. Let your imagination run wild! But don't be too greedy: with every strength you add to your character, an equally harmful weakness gets added too. Keep in mind the final bonus round, where players will fight each other in a climatic battle royale. Can you survive, or will feature creep be your own undoing?";
-    await longSpeak(explainString);
+    explainString = "Feature Creeps is a roleplaying adventure game where players level up, add new abilities to their character sheets, and face monsters. Every round, a randomly generated Creep will appear. You'll have the chance to read their character sheet before deciding how to improve your character to face them in combat. When you add a new strength, you can write down literally anything you want, so long as it isn't in conflict with your existing abilities. Let your imagination run wild! But don't be too greedy: with every strength you add to your character, an equally harmful weakness gets added too. Keep in mind the final bonus round, where players will fight each other in a climatic battle royale. Can you survive, or will feature creep be your own undoing?";
   } else {
-    const explainString = "Let the games begin!";
-    await longSpeak(explainString);
+    explainString = "Let the games begin!";
   }
+  if (elements.story) { elements.story.innerText = explainString; }
+  await longSpeak(explainString);
+
+  // Wait for the first creep to be generated before changing state.
+  await promises.enemies[0];
+
   await runStateLogic(GameState.RoundAbilities);
 }
 
@@ -206,6 +234,7 @@ async function roundBattle() {
     console.log(`${c1.name} vs ${c2.name}`);
     console.log(c1.toString());
     console.log(c2.toString());
+    if (elements.story) { elements.story.innerText = description; }
     await longSpeak(description);
     winner.wins += 1;
   }
@@ -230,6 +259,7 @@ async function battleRoyale() {
   const result = await promises.battleRoyale;
   if (!result) { throw Error("Battle royale returned nothing."); }
   const [winner, description] = result;
+  if (elements.story) { elements.story.innerText = description; }
   await longSpeak(description);
   if (!winner) throw Error("No winner was chosen by the model.");
   console.log(`${winner.name} wins!`);
@@ -266,109 +296,156 @@ async function end() {
   state.gameState = GameState.Init;
 }
 
-// Temporary options menu, since we have no GUI yet.
 async function options() {
-  const optionsMenu = document.getElementById('optionsMenu');
-  if (optionsMenu) { optionsMenu.style.display = 'block'; }
-  // TODO: Make controls functional.
+  function populateDropdown(element: HTMLSelectElement, options: string[], defaultValue: string = "") {
+    const optionPairs: [string, string][] = options.map((option) => [option, option]);
+    populateDropdownPairs(element, optionPairs, defaultValue);
+  }
 
-  //   const numRounds = promptWithValidation<number>(
-  //     `Enter number of rounds:
-  // Valid options: 1 or more
-  // Current value: ${state.options.numRounds}`,
-  //     (input) => {
-  //       const int = parseInt(input);
-  //       if (Number.isNaN(int)) return null;
-  //       if (int < VALID_OPTIONS.minRounds) return null;
-  //       return int;
-  //     }
-  //   );
-  //   if (numRounds) state.options.numRounds = numRounds;
-  //   console.log(`state.options.numRounds = ${state.options.numRounds}`);
+  function populateDropdownPairs(element: HTMLSelectElement, options: [string, string][], defaultValue: string = "") {
+    element.innerHTML = "";
+    options.forEach(option => {
+      const opt = document.createElement("option");
+      opt.value = option[0];
+      opt.textContent = option[1];
+      element.appendChild(opt);
+    });
+    element.value = defaultValue;
+  }
+  async function updateLlmLists() {
+    if (!VALID_OPTIONS.inferenceEngine
+      .map(([value, _]) => value)
+      .includes(inferenceEngine.value)) {
+      return;
+    }
+    state.options.inference.engine = inferenceEngine.value;
+    if (state.options.inference.engine === "local") {
+      inferenceApiUrl.style.display = "none";
+      inferenceApiKey.style.display = "none";
 
+      const models = await listModels();
+      // const modelStrings = models.map(model => model.model_id);
+      const modelStrings = models.map((model): [string, string] => {
+        const vram = model.vram_required_MB;
+        const formattedVram = vram ?
+          (vram >= 1024 ?
+            `\t(${(vram / 1024).toFixed(1)}GB VRAM)` :
+            `\t(${Math.floor(vram)}MB VRAM)`) :
+          ("");
+        return [model.model_id,
+        `${model.model_id.replaceAll("-", " ")}${formattedVram}`];
+      });
+      populateDropdownPairs(inferenceModel, modelStrings, state.options.inference.modelName || "Choose an LLM engine first.");
 
-  //   console.log(VALID_OPTIONS.inferenceEngine);
-  //   const inferenceEngine = promptWithValidation<string>(
-  //     `Enter a valid inference engine:
-  // Valid options: ${JSON.stringify(VALID_OPTIONS.inferenceEngine)}
-  // Current value: ${state.options.inference.engine}`,
-  //     (input) => {
-  //       if (VALID_OPTIONS.inferenceEngine.includes(input)) return input;
-  //       return null;
-  //     }
-  //   );
-  //   if (inferenceEngine) state.options.inference.engine = inferenceEngine;
-  //   console.log(`state.options.inference.engine = ${state.options.inference.engine}`);
+      inferenceModel.style.display = "block";
+    } else if (state.options.inference.engine == "API") {
+      inferenceModel.style.display = "none";
 
+      inferenceApiUrl.style.display = "block";
+      inferenceApiKey.style.display = "block";
+    }
+  }
+  async function updateTtsLists() {
+    if (!VALID_OPTIONS.ttsType
+      .map(([value, _]) => value)
+      .includes(ttsType.value)) {
+      return;
+    }
+    state.options.tts.type = ttsType.value;
+    if (state.options.tts.type === "none") {
+      return;
+    }
+    await initTts({
+      type: state.options.tts.type,
+      reload: false
+    })
+    const ttsVoiceOptions = await tts?.listModels();
+    ttsVoice.innerHTML = "";
+    if (!ttsVoiceOptions) { return; }
+    ttsVoiceOptions.forEach(voice => {
+      const opt = document.createElement("option");
+      opt.value = voice;
+      opt.textContent = voice;
+      ttsVoice.appendChild(opt);
+    });
+  }
 
-  //   if (state.options.inference.engine == "local") {
-  //     const models = await listModels();
-  //     const modelStrings = models.map(model => model.model_id);
-  //     console.log(modelStrings);
-  //     const inferenceModelName = promptWithValidation<string>(
-  //       `Enter A valid inference model name:
-  // Valid options: ${JSON.stringify(modelStrings)}
-  // Current value: ${state.options.inference.modelName}`,
-  //       (input) => {
-  //         if (modelStrings.includes(input)) return input;
-  //         return null;
-  //       }
-  //     );
-  //     if (inferenceModelName) state.options.inference.modelName = inferenceModelName;
-  //     console.log(`state.options.inference.modelName = ${state.options.inference.modelName}`);
+  const optionsMenu = document.getElementById("options");
+  if (optionsMenu) { optionsMenu.style.display = "block"; }
 
+  // Get elements.
+  const numRounds = document.getElementById("rounds") as HTMLInputElement;
+  const inferenceEngine = document.getElementById("inferenceEngine") as HTMLSelectElement;
+  const inferenceModel = document.getElementById("inferenceModel") as HTMLSelectElement;
+  const temperature = document.getElementById("temperature") as HTMLInputElement;
+  const inferenceApiUrl = document.getElementById("inferenceApiUrl") as HTMLInputElement;
+  const inferenceApiKey = document.getElementById("inferenceApiKey") as HTMLInputElement;
+  const ttsType = document.getElementById("ttsType") as HTMLSelectElement;
+  const ttsVoice = document.getElementById("ttsVoice") as HTMLSelectElement;
 
-  //   } else if (state.options.inference.engine == "API") {
-  //     const inferenceApiURL = promptWithValidation<string>(
-  //       `Enter A valid inference API URL:
-  // Current value: ${state.options.inference.apiURL}`,
-  //       (input) => { return input; }
-  //     );
-  //     if (inferenceApiURL) state.options.inference.apiURL = inferenceApiURL;
-  //     console.log(`state.options.inference.apiURL = ${state.options.inference.apiURL}`);
+  // Load current state.
+  if (numRounds) { numRounds.value = state.options.numRounds.toString(); }
+  populateDropdownPairs(inferenceEngine, VALID_OPTIONS.inferenceEngine, state.options.inference.engine || "Choose an LLM engine first.");
+  await updateLlmLists();
+  if (inferenceModel) { inferenceModel.value = state.options.inference.modelName || "Choose an LLM engine first."; }
+  if (temperature) { temperature.value = state.options.inference.temperature.toString(); }
+  if (inferenceApiUrl) { inferenceApiUrl.value = state.options.inference.apiURL || ""; }
+  if (inferenceApiKey) { inferenceApiKey.value = state.options.inference.apiKey || ""; }
+  populateDropdownPairs(ttsType, VALID_OPTIONS.ttsType, state.options.tts.type || "Choose a TTS engine first.");
+  await updateTtsLists();
+  if (ttsVoice) { ttsVoice.value = state.options.tts.voice || "Choose a TTS engine first."; }
 
+  inferenceEngine?.addEventListener("change", async () => {
+    const selectedValue = inferenceEngine.value;
+    if (VALID_OPTIONS.inferenceEngine
+      .map(([value, _]) => value)
+      .includes(selectedValue)) {
+      state.options.inference.engine = selectedValue;
+      await updateLlmLists();
+    }
+  });
 
-  //     const inferenceApiKey = promptWithValidation<string>(
-  //       `Enter A valid inference API key:
-  // 			Current value: ${state.options.inference.apiKey}`,
-  //       (input) => { return input; }
-  //     );
-  //     if (inferenceApiKey) state.options.inference.apiKey = inferenceApiKey;
-  //     console.log(`state.options.inference.apiKey = ${state.options.inference.apiKey}`);
-  //   }
+  ttsType?.addEventListener("change", async () => {
+    const selectedValue = ttsType.value;
+    if (VALID_OPTIONS.ttsType
+      .map(([value, _]) => value)
+      .includes(selectedValue)) {
+      state.options.tts.type = selectedValue;
+      await updateTtsLists();
+    }
+  });
 
+  document.getElementById("saveConfig")?.addEventListener("click", async () => {
+    // Save updated state.
+    const parsedRounds = parseInt(numRounds.value);
+    if (parsedRounds >= VALID_OPTIONS.minRounds) {
+      state.options.numRounds = parsedRounds;
+      // TODO: On-screen warning.
+    }
+    state.options.inference.engine = inferenceEngine.value;
+    state.options.inference.modelName = inferenceModel.value;
+    const parsedTemperature = parseInt(temperature.value);
+    if (0 <= parsedTemperature && parsedTemperature >= 2) {
+      state.options.inference.temperature = parsedTemperature;
+      // TODO: On-screen warning.
+    }
+    state.options.inference.apiURL = inferenceApiUrl.value;
+    state.options.inference.apiKey = inferenceApiKey.value;
+    // Reload TTS if these changed.
+    let reloadTts = false;
+    if (state.options.tts.type !== ttsType.value ||
+      state.options.tts.voice !== ttsVoice.value) {
+      reloadTts = true;
+    }
+    state.options.tts.type = ttsType.value;
+    state.options.tts.voice = ttsVoice.value;
+    if (reloadTts) {
+      await initTts({ reload: true });
+    }
 
-  //   console.log(VALID_OPTIONS.ttsType);
-  //   const ttsType = promptWithValidation<string>(
-  //     `Enter the TTS engine to use:
-  // Valid options: ${JSON.stringify(VALID_OPTIONS.ttsType)}
-  // Current value: ${state.options.tts.type}`,
-  //     (input) => {
-  //       if (VALID_OPTIONS.ttsType.includes(input)) {
-  //         return input;
-  //       }
-  //       return null;
-  //     }
-  //   )
-  //   if (ttsType) state.options.tts.type = ttsType;
-  //   console.log(`state.options.tts.type = ${state.options.tts.type}`);
-  //   await initTts({});
+    console.log(state);
 
-
-  //   if (state.options.tts.type != "none") {
-  //     const ttsVoiceOptions = await tts?.listModels();
-  //     console.log(ttsVoiceOptions);
-  //     const ttsVoice = promptWithValidation<string>(
-  //       `Enter the TTS voice to use:
-  // Valid options: ${JSON.stringify(ttsVoiceOptions)}
-  // Current value: ${state.options.tts.voice}`,
-  //       (input) => {
-  //         if (ttsVoiceOptions && ttsVoiceOptions.includes(input)) return input;
-  //         return null;
-  //       }
-  //     )
-  //     if (ttsVoice) state.options.tts.voice = ttsVoice;
-  //     console.log(`state.options.tts.voice = ${state.options.tts.voice}`);
-  //     await initTts({});
-  //   }
+    // Run game state logic after saving.
+    await runStateLogic(GameState.Init);
+  });
 }

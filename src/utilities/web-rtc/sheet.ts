@@ -1,6 +1,6 @@
 import { selfId } from "trystero/mqtt";
 import { WebRTC } from "@utilities/web-rtc";
-import { state } from "@utilities/state";
+import { state, Role } from "@utilities/state";
 import { CharacterSheet } from "@utilities/character-sheet";
 
 type SheetData = { sheet: string, peerId: string };
@@ -20,6 +20,9 @@ export function sheetMixin<TBase extends new (...args: any[]) => WebRTC>(Base: T
         try {
           if (!this.isSheetData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
+          }
+          if (state.role != Role.Client) {
+            throw new Error(`Ignoring character sheet sent by ${peerId} to a ${Role[state.role]}: ${data.sheet}`);
           }
           console.log(`Got sheet from ${peerId} for peer ${data.peerId}: ${data.sheet}`);
           // Update player sheet.

@@ -1,5 +1,4 @@
 import { WebRTC } from "@utilities/web-rtc";
-import { elements } from "@utilities/elements";
 import { state, GameState, Role } from "@utilities/state";
 import * as client from "@utilities/game-logic-client";
 
@@ -23,6 +22,9 @@ export function updateMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           // Verify that peerId is the host.
           if (peerId !== state.hostId) {
             throw new Error(`Received state change request from a non-host peer: ${peerId}`);
+          }
+          if (state.role != Role.Client) {
+            throw new Error(`Ignoring state change sent by ${peerId} to a ${Role[state.role]}: ${GameState[data.state]}`);
           }
           console.log(`Got state from ${peerId}: ${data.state}`);
           // Update state.

@@ -13,6 +13,7 @@ export interface TTS {
   clearModels(): Promise<void>; // Clear downloaded models
   generate(text: string): Promise<[any, string]>; // Synthesize speech from text
   speakGenerated(wav: any, text: string): Promise<void>; // Play generated speech from text
+  // TODO: Add a function to stop playback early.
 }
 
 // Implementation for VITS-Web
@@ -109,26 +110,16 @@ interface KokoroTTSVoice {
 
 // Implementation for Kokoro TTS
 export class KokoroTTS implements TTS {
-  private tts?: kokoroTTS;
+  protected tts?: kokoroTTS;
   private audio?: HTMLAudioElement;
-  async initialize() {
-    if (this.tts) {
-      return;
-    }
-    // TODO: Automatically identify the best device and type to use based on browser features.
-    // For now, we assume that WebGPU is the best setting.
+  async initialize(options: Parameters<typeof kokoroTTS.from_pretrained>[1] = { dtype: "fp32", device: "webgpu" }) {
+    if (this.tts) { return; }
     this.tts = await kokoroTTS.from_pretrained(
       "onnx-community/Kokoro-82M-v1.0-ONNX",
-      {
-        dtype: "fp32",
-        device: "webgpu",
-      }
+      options
     );
   }
   async listModels(): Promise<string[]> {
-    // TODO: Why does list_voices() return void?
-    // return this.tts.list_voices();
-    // HACK: This is a hack since there is no other way to list the voices.
     const voiceList = Object.values(
       this.tts?.voices as Record<string, KokoroTTSVoice>
     );
@@ -137,7 +128,8 @@ export class KokoroTTS implements TTS {
       .filter(
         (voice) =>
           voice.overallGrade.startsWith("A") ||
-          voice.overallGrade.startsWith("B")
+          voice.overallGrade.startsWith("B") ||
+          voice.name.includes("Lewis")
       )
       .map((voice) => voice.name);
     return tts_voices;
@@ -145,10 +137,11 @@ export class KokoroTTS implements TTS {
   async selectModel(modelName: string): Promise<boolean> {
     const selectedModel = Object.entries(
       this.tts?.voices as Record<string, KokoroTTSVoice>
-    ).find(([key, value]) => value.name === modelName)?.[0];
+    ).find(([_, value]) => value.name === modelName)?.[0];
     console.log(
       `Kokoro: Selected model ${modelName}, internally identified as ${selectedModel}`
     );
+    // TODO: Handle this mismatch between internal and external model names. This breaks my options menu.
     state.options.tts.voice = selectedModel;
     return selectedModel ? true : false;
   }
@@ -163,8 +156,7 @@ export class KokoroTTS implements TTS {
       }
       return Promise.all([
         this.tts.generate(text, {
-          // @ts-ignore: Since we know the voice list is already a hack,
-          // I will consider this acceptable for now.
+          // @ts-ignore
           voice: state.options.tts.voice || "af_heart",
         }),
         Promise.resolve(text)
@@ -200,8 +192,7 @@ export class KokoroTTS implements TTS {
         throw new Error("Kokoro failed to initialize the TTS engine.");
       }
       const generated = await this.tts.generate(text, {
-        // @ts-ignore: Since we know the voice list is already a hack,
-        // I will consider this acceptable for now.
+        // @ts-ignore
         voice: state.options.tts.voice || "af_heart",
       });
       let audio = new Audio();
@@ -377,6 +368,11 @@ export async function initTts(options: {
       // Best quality model. Runs on the GPU via WebGPU. Consumes about 700MB of VRAM.
       tts = new KokoroTTS();
       await (tts as KokoroTTS).initialize();
+      break;
+    case "kokoroWasm":
+      // Best quality model. Runs on multithreaded CPU via WASM.
+      tts = new KokoroTTS();
+      await (tts as KokoroTTS).initialize({ dtype: "q4", device: "wasm" });
       break;
     case "vitsweb":
       // Medium quality model. Runs on multithreaded CPU via WASM.
