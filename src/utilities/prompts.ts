@@ -2,6 +2,44 @@ import { CharacterSheet } from '@utilities/character-sheet.ts'
 import { client, formatSchema } from "@utilities/openai.ts"
 import { state } from "@utilities/state"
 
+// TODO: Consider a prompt queue to avoid overloading WebLLM. Maybe even make
+// TTS generation part of the queue if it uses WebGPU.
+
+// TODO: Add sanitizer to JSON.parse().
+// function sanitizeJSON(jsonString: string): string {
+//   return jsonString
+//       .replace(/[\b\f\n\r\t]/g, (char) => {
+//           switch (char) {
+//               case '\b': return '\\b';
+//               case '\f': return '\\f';
+//               case '\n': return '\\n';
+//               case '\r': return '\\r';
+//               case '\t': return ' ';  // Replace tab with a space
+//               default: return '';
+//           }
+//       })
+//       .replace(/[\u0000-\u001F\u007F-\u009F]/g, ''); // Remove other control characters
+// }
+
+// function safeParseJSON(jsonString: string): any | null {
+//   try {
+//       const sanitized = sanitizeJSON(jsonString);
+//       return JSON.parse(sanitized);
+//   } catch (error) {
+//       console.error("Invalid JSON:", error);
+//       return null;
+//   }
+// }
+
+// // Example Usage
+// const rawJSON = `{
+//   "battle_description": "The battle began...\\tThe warriors clashed...",
+//   "winner": "Kenneth"
+// }`;
+
+// const parsedData = safeParseJSON(rawJSON);
+// console.log(parsedData);
+
 export async function isStrength(
   character: CharacterSheet,
   ability: string

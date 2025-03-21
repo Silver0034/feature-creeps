@@ -4,7 +4,7 @@
 // TODO: Carefully consider which state to save, which to regenerate, and which to keep private.
 // TODO: Carefully consider when to initialize (or re-initialize) code based on changed state.
 
-import { CharacterSheet } from '@utilities/character-sheet.ts';
+import { CharacterSheet } from '@utilities/character-sheet';
 import { initTts } from '@utilities/tts';
 import { initLlm } from '@utilities/openai';
 

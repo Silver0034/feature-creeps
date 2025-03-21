@@ -31,7 +31,7 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           console.log(`${peerId} is the server: ${JSON.stringify(data)}`);
 
           // Hide the room code entry. We have found a working room.
-          if (elements.roomDiv) { elements.roomDiv.style.display = "none"; }
+          elements.client.roomDiv.style.display = "none";
 
           // Store the secret in case we need to verify our identity to the server later.
           const player = state.players.find(player => player.peerId === selfId);

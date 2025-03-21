@@ -29,9 +29,10 @@ export function updateMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           console.log(`Got state from ${peerId}: ${data.state}`);
           // Update state.
           state.gameState = data.state;
+
           // Display it in the UI.
           // NOTE: Redundant with typical client approach.
-          // if (elements.gameState) { elements.gameState.textContent = GameState[state.gameState]; }
+          // elements.gameState.textContent = GameState[state.gameState];
 
           // Clients call their relevant methods from here.
           if (state.role = Role.Client) {

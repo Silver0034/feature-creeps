@@ -1,4 +1,4 @@
-import AsyncLock from "async-lock";
+import * as AsyncLock from "async-lock";
 import { elements } from "@utilities/elements";
 import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
@@ -7,7 +7,7 @@ type NameData = { name: string };
 
 export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
-    private nameLock = new AsyncLock();
+    private nameLock = new AsyncLock.default();
     public sendName!: (data: NameData, peerId?: string) => void;
     constructor(...args: any[]) {
       super(...args);
@@ -39,11 +39,9 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
             const validationError = this.validateName(data.name);
             if (!validationError) {
               player.sheet.name = data.name;
-              if (elements.playerCount != null) {
-                elements.playerCount.textContent =
-                  (parseInt(elements.playerCount.innerText) + 1)
-                    .toString();
-              }
+              elements.host.playerCount.textContent =
+                (parseInt(elements.host.playerCount.innerText) + 1)
+                  .toString();
             } else {
               // TODO: Add name feedback if it fails to validate with the host.
               console.warn(`Name validation failed for ${data.name}: ${validationError}`);
@@ -62,11 +60,15 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
         typeof data.name === "string"
       );
     }
-    // NOTE: We can do client-side name duplication validation easily if sendNames are broadcast globally, since we can store them and find them here.
     public validateName(name: string): string | null {
-      if (state.players.some(player => player.sheet.name === name)) { return "Name already in use."; }
       if (name.length > 15) { return "Name is too long (>15 characters)."; }
       if (name.length <= 0) { return "Please fill in a name."; }
+      // NOTE: We can do an initial client-side name duplication validation
+      // easily if sendName() is broadcast globally, since we can store them and
+      // find them here.
+      if (state.players.some(player => player.sheet.name === name)) {
+        return "Name already in use.";
+      }
       return null;
     }
   };

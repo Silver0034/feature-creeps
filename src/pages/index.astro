@@ -17,8 +17,8 @@
 	<p>Options Menu:</p>
 	<!-- TODO: Add a VRAM usage bar to the top of the screen. -->
 	<!-- TODO: Add option to skip intro automatically. -->
-	<label for="rounds">Rounds (1 or more):</label>
-	<input type="text" id="rounds" size="10" />
+	<label for="numRounds">Rounds (1 or more):</label>
+	<input type="text" id="numRounds" size="10" />
 	<br />
 	<br />
 	<label for="inferenceEngine">LLM Engine:</label>
@@ -56,7 +56,7 @@
   <div id="Init" style="display:none;">
 	<button id="startButton">Start</button>
 	<!-- Temporarily hidden, as options are not fully functional yet. -->
-	<!-- <button id="optionsButton">Options</button> -->
+	<button id="optionsButton" style="display:none;">Options</button>
   </div>
   <div id="Connect" style="display:none;">
 	<p>Players Joined: <span id="playerCount">0</span></p>
@@ -73,3 +73,4 @@
   <p id="story"></p>
   <!-- TODO: Add a message system to notify of any oddities, errors, etc. -->
   <!-- TODO: Add a statement to inform players why they are waiting. -->
+  

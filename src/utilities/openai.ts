@@ -61,7 +61,6 @@ export async function listModels(): Promise<webllm.ModelRecord[]> {
   return model_list
 }
 
-// NOTE: Ensure state.options.inference data is filled in before calling this.
 // TODO: Rework this code to function more like simple-chat: https://github.com/mlc-ai/web-llm/blob/main/examples/simple-chat-ts/src/simple_chat.ts
 // We wish to load (and switch) the model after starting the engine.
 // We also want to appropriately list only supported models from a drop-down list.

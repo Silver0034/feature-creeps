@@ -1,4 +1,4 @@
-import AsyncLock from "async-lock";
+import * as AsyncLock from "async-lock";
 import { elements } from "@utilities/elements";
 import { promises } from "@utilities/promises"
 import { validateAbility, balanceAbility, generateClass, combat } from "@utilities/prompts"
@@ -10,7 +10,7 @@ type AbilityFBData = { feedback: string };
 
 export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
-    private abilityLock = new AsyncLock();
+    private abilityLock = new AsyncLock.default();
     private inProgress = new Set<string>();
     public sendAbility!: (data: AbilityData, peerId?: string) => void;
     public sendAbilityFB!: (data: AbilityFBData, peerId?: string) => void;
@@ -84,7 +84,6 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
       });
       const [sendAbilityFB, getAbilityFB] = this.room.makeAction<AbilityFBData>("abilityFB");
       this.sendAbilityFB = sendAbilityFB;
-      // TODO: If possible, vibrate and make a sound if we get feedback.
       getAbilityFB(async (data, peerId) => {
         try {
           if (!this.isAbilityFBData(data)) {
@@ -99,8 +98,8 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           // TODO: Display this in the GUI.
           console.log(`Got ability feedback from ${peerId}: ${data.feedback}`);
 
-          // TODO: Re-enable ability form in the GUI.
-          if (elements.abilityDiv) { elements.abilityDiv.style.display = "inline"; }
+          // Re-enable ability form in the GUI.
+          elements.client.abilityDiv.style.display = "inline";
 
           // Make sure the user knows that they need to revise their answer.
           // TODO: Make this optional.

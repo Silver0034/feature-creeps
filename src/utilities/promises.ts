@@ -1,5 +1,10 @@
 import type { TTS } from '@utilities/tts';
-import { CharacterSheet } from '@utilities/character-sheet.ts'
+import { CharacterSheet } from '@utilities/character-sheet'
+
+// TODO: Consider merging this file with state.ts.
+// TODO: Make sure we aren't missing any major promises from this list.
+// TODO: Make a special Promise interface to provide feedback to players on what is being waited on.
+// TODO: More gracefully handle failed promises instead of hanging forever.
 
 interface PromisesInterface {
     // Generation of enemies to be added to state.enemies.

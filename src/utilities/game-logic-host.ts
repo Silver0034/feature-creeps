@@ -46,9 +46,6 @@ const VALID_OPTIONS = {
 export async function main(): Promise<void> {
   state.role = Role.Host;
   state.hostId = selfId;
-  elements.gameState = document.getElementById("gameState") as HTMLInputElement;
-  elements.story = document.getElementById("story") as HTMLInputElement;
-  elements.playerCount = document.getElementById("playerCount") as HTMLElement;
 
   // TODO: If we have a game in progress, restore to the appropriate game state. Ensure clients reset to that state as well. The current round must be reset because we never store battle outputs in the state, just the character sheets. We will also need to announce our new peerId to the swarm.
   // If we unwind from all called functions, go back to game start every time.
@@ -64,7 +61,7 @@ export async function runStateLogic(newState?: GameState) {
 
   // Update the displayed game mode.
   //  (${state.round}/${state.options.numRounds}) will not display the right thing yet, but we do want this.
-  if (elements.gameState) { elements.gameState.textContent = `${GameState[state.gameState]}`; }
+  elements.gameState.textContent = `${GameState[state.gameState]}`;
 
   // Update the UI.
   // TODO: Use the content views instead.
@@ -115,14 +112,14 @@ export async function runStateLogic(newState?: GameState) {
 }
 
 async function init() {
-  document.getElementById("startButton")?.addEventListener("click", async () => {
+  elements.host.startButton.addEventListener("click", async () => {
     // Make sure the inference engines are ready to go.
     promises.tts = initTts({ reload: false });
     promises.llm = initLlm({ reload: false });
 
     await runStateLogic(GameState.Connect);
   });
-  document.getElementById("optionsButton")?.addEventListener("click", async () => {
+  elements.host.optionsButton.addEventListener("click", async () => {
     await runStateLogic(GameState.Options);
   });
 }
@@ -140,7 +137,6 @@ async function connect() {
   }
 
   async function makeQr(roomId: string) {
-    const roomQr = document.getElementById("roomQr") as HTMLInputElement;
     const qrCode = new QRCode({
       content: `${location.href}client/?r=${roomId}`,
       padding: 0,
@@ -148,20 +144,19 @@ async function connect() {
       join: true,
       container: "svg"
     });
-    roomQr.innerHTML = qrCode.svg();
-    roomQr.style.display = "block";
+    elements.host.roomQr.innerHTML = qrCode.svg();
+    elements.host.roomQr.style.display = "block";
   }
 
   // Generate a room code.
   // TODO: Make sure it's not already in use.
   state.room.roomId = generateRoomCode();
-  const roomCodeElement = document.getElementById("roomCode");
-  if (roomCodeElement) roomCodeElement.textContent = state.room.roomId.toUpperCase();
+  elements.host.roomCode.textContent = state.room.roomId.toUpperCase();
   makeQr(state.room.roomId);
   console.log(state.room.roomId.toUpperCase());
   // Connect to the room.
   rtc = new WebRTCServer(state.room.roomId);
-  
+
   async function generateEnemies(): Promise<void> {
     // Pre-generate our enemies.
     for (let round = 0; round < state.options.numRounds; round++) {
@@ -178,7 +173,7 @@ async function connect() {
   // Names are provided in nameMixin.
 
   // Wait for start button to be hit.
-  document.getElementById("goButton")?.addEventListener("click", async () => {
+  elements.host.goButton.addEventListener("click", async () => {
     // Toss any incomplete character sheets.
     state.players = state.players.filter(player => player.sheet.name !== "Unknown");
     await runStateLogic(GameState.Intro);
@@ -201,7 +196,7 @@ async function intro() {
   } else {
     explainString = "Let the games begin!";
   }
-  if (elements.story) { elements.story.innerText = explainString; }
+  elements.host.story.innerText = explainString;
   await longSpeak(explainString);
 
   // Wait for the first creep to be generated before changing state.
@@ -234,7 +229,7 @@ async function roundBattle() {
     console.log(`${c1.name} vs ${c2.name}`);
     console.log(c1.toString());
     console.log(c2.toString());
-    if (elements.story) { elements.story.innerText = description; }
+    elements.host.story.innerText = description;
     await longSpeak(description);
     winner.wins += 1;
   }
@@ -259,7 +254,7 @@ async function battleRoyale() {
   const result = await promises.battleRoyale;
   if (!result) { throw Error("Battle royale returned nothing."); }
   const [winner, description] = result;
-  if (elements.story) { elements.story.innerText = description; }
+  elements.host.story.innerText = description;
   await longSpeak(description);
   if (!winner) throw Error("No winner was chosen by the model.");
   console.log(`${winner.name} wins!`);
@@ -296,6 +291,7 @@ async function end() {
   state.gameState = GameState.Init;
 }
 
+// TODO: Make everything in this menu functional.
 async function options() {
   function populateDropdown(element: HTMLSelectElement, options: string[], defaultValue: string = "") {
     const optionPairs: [string, string][] = options.map((option) => [option, option]);
@@ -315,13 +311,13 @@ async function options() {
   async function updateLlmLists() {
     if (!VALID_OPTIONS.inferenceEngine
       .map(([value, _]) => value)
-      .includes(inferenceEngine.value)) {
+      .includes(elements.host.options.inferenceEngine.value)) {
       return;
     }
-    state.options.inference.engine = inferenceEngine.value;
+    state.options.inference.engine = elements.host.options.inferenceEngine.value;
     if (state.options.inference.engine === "local") {
-      inferenceApiUrl.style.display = "none";
-      inferenceApiKey.style.display = "none";
+      elements.host.options.inferenceApiUrl.style.display = "none";
+      elements.host.options.inferenceApiKey.style.display = "none";
 
       const models = await listModels();
       // const modelStrings = models.map(model => model.model_id);
@@ -335,23 +331,23 @@ async function options() {
         return [model.model_id,
         `${model.model_id.replaceAll("-", " ")}${formattedVram}`];
       });
-      populateDropdownPairs(inferenceModel, modelStrings, state.options.inference.modelName || "Choose an LLM engine first.");
+      populateDropdownPairs(elements.host.options.inferenceModel, modelStrings, state.options.inference.modelName || "Choose an LLM engine first.");
 
-      inferenceModel.style.display = "block";
+      elements.host.options.inferenceModel.style.display = "block";
     } else if (state.options.inference.engine == "API") {
-      inferenceModel.style.display = "none";
+      elements.host.options.inferenceModel.style.display = "none";
 
-      inferenceApiUrl.style.display = "block";
-      inferenceApiKey.style.display = "block";
+      elements.host.options.inferenceApiUrl.style.display = "block";
+      elements.host.options.inferenceApiKey.style.display = "block";
     }
   }
   async function updateTtsLists() {
     if (!VALID_OPTIONS.ttsType
       .map(([value, _]) => value)
-      .includes(ttsType.value)) {
+      .includes(elements.host.options.ttsType.value)) {
       return;
     }
-    state.options.tts.type = ttsType.value;
+    state.options.tts.type = elements.host.options.ttsType.value;
     if (state.options.tts.type === "none") {
       return;
     }
@@ -360,43 +356,30 @@ async function options() {
       reload: false
     })
     const ttsVoiceOptions = await tts?.listModels();
-    ttsVoice.innerHTML = "";
+    elements.host.options.ttsVoice.innerHTML = "";
     if (!ttsVoiceOptions) { return; }
     ttsVoiceOptions.forEach(voice => {
       const opt = document.createElement("option");
       opt.value = voice;
       opt.textContent = voice;
-      ttsVoice.appendChild(opt);
+      elements.host.options.ttsVoice.appendChild(opt);
     });
   }
 
-  const optionsMenu = document.getElementById("options");
-  if (optionsMenu) { optionsMenu.style.display = "block"; }
-
-  // Get elements.
-  const numRounds = document.getElementById("rounds") as HTMLInputElement;
-  const inferenceEngine = document.getElementById("inferenceEngine") as HTMLSelectElement;
-  const inferenceModel = document.getElementById("inferenceModel") as HTMLSelectElement;
-  const temperature = document.getElementById("temperature") as HTMLInputElement;
-  const inferenceApiUrl = document.getElementById("inferenceApiUrl") as HTMLInputElement;
-  const inferenceApiKey = document.getElementById("inferenceApiKey") as HTMLInputElement;
-  const ttsType = document.getElementById("ttsType") as HTMLSelectElement;
-  const ttsVoice = document.getElementById("ttsVoice") as HTMLSelectElement;
-
   // Load current state.
-  if (numRounds) { numRounds.value = state.options.numRounds.toString(); }
-  populateDropdownPairs(inferenceEngine, VALID_OPTIONS.inferenceEngine, state.options.inference.engine || "Choose an LLM engine first.");
+  elements.host.options.numRounds.value = state.options.numRounds.toString();
+  populateDropdownPairs(elements.host.options.inferenceEngine, VALID_OPTIONS.inferenceEngine, state.options.inference.engine || "Choose an LLM engine first.");
   await updateLlmLists();
-  if (inferenceModel) { inferenceModel.value = state.options.inference.modelName || "Choose an LLM engine first."; }
-  if (temperature) { temperature.value = state.options.inference.temperature.toString(); }
-  if (inferenceApiUrl) { inferenceApiUrl.value = state.options.inference.apiURL || ""; }
-  if (inferenceApiKey) { inferenceApiKey.value = state.options.inference.apiKey || ""; }
-  populateDropdownPairs(ttsType, VALID_OPTIONS.ttsType, state.options.tts.type || "Choose a TTS engine first.");
+  elements.host.options.inferenceModel.value = state.options.inference.modelName || "Choose an LLM engine first.";
+  elements.host.options.temperature.value = state.options.inference.temperature.toString();
+  elements.host.options.inferenceApiUrl.value = state.options.inference.apiURL || "";
+  elements.host.options.inferenceApiKey.value = state.options.inference.apiKey || "";
+  populateDropdownPairs(elements.host.options.ttsType, VALID_OPTIONS.ttsType, state.options.tts.type || "Choose a TTS engine first.");
   await updateTtsLists();
-  if (ttsVoice) { ttsVoice.value = state.options.tts.voice || "Choose a TTS engine first."; }
+  elements.host.options.ttsVoice.value = state.options.tts.voice || "Choose a TTS engine first.";
 
-  inferenceEngine?.addEventListener("change", async () => {
-    const selectedValue = inferenceEngine.value;
+  elements.host.options.inferenceEngine.addEventListener("change", async () => {
+    const selectedValue = elements.host.options.inferenceEngine.value;
     if (VALID_OPTIONS.inferenceEngine
       .map(([value, _]) => value)
       .includes(selectedValue)) {
@@ -405,8 +388,8 @@ async function options() {
     }
   });
 
-  ttsType?.addEventListener("change", async () => {
-    const selectedValue = ttsType.value;
+  elements.host.options.ttsType.addEventListener("change", async () => {
+    const selectedValue = elements.host.options.ttsType.value;
     if (VALID_OPTIONS.ttsType
       .map(([value, _]) => value)
       .includes(selectedValue)) {
@@ -415,30 +398,30 @@ async function options() {
     }
   });
 
-  document.getElementById("saveConfig")?.addEventListener("click", async () => {
+  elements.host.options.saveConfig.addEventListener("click", async () => {
     // Save updated state.
-    const parsedRounds = parseInt(numRounds.value);
+    const parsedRounds = parseInt(elements.host.options.numRounds.value);
     if (parsedRounds >= VALID_OPTIONS.minRounds) {
       state.options.numRounds = parsedRounds;
       // TODO: On-screen warning.
     }
-    state.options.inference.engine = inferenceEngine.value;
-    state.options.inference.modelName = inferenceModel.value;
-    const parsedTemperature = parseInt(temperature.value);
+    state.options.inference.engine = elements.host.options.inferenceEngine.value;
+    state.options.inference.modelName = elements.host.options.inferenceModel.value;
+    const parsedTemperature = parseInt(elements.host.options.temperature.value);
     if (0 <= parsedTemperature && parsedTemperature >= 2) {
       state.options.inference.temperature = parsedTemperature;
       // TODO: On-screen warning.
     }
-    state.options.inference.apiURL = inferenceApiUrl.value;
-    state.options.inference.apiKey = inferenceApiKey.value;
+    state.options.inference.apiURL = elements.host.options.inferenceApiUrl.value;
+    state.options.inference.apiKey = elements.host.options.inferenceApiKey.value;
     // Reload TTS if these changed.
     let reloadTts = false;
-    if (state.options.tts.type !== ttsType.value ||
-      state.options.tts.voice !== ttsVoice.value) {
+    if (state.options.tts.type !== elements.host.options.ttsType.value ||
+      state.options.tts.voice !== elements.host.options.ttsVoice.value) {
       reloadTts = true;
     }
-    state.options.tts.type = ttsType.value;
-    state.options.tts.voice = ttsVoice.value;
+    state.options.tts.type = elements.host.options.ttsType.value;
+    state.options.tts.voice = elements.host.options.ttsVoice.value;
     if (reloadTts) {
       await initTts({ reload: true });
     }
