@@ -11,7 +11,10 @@
   <p>Server</p>
   <p>Game State: <span id="gameState"></span></p>
   <p>Room Code: <span id="roomCode">------</span></p>
-  <svg id="roomQr" width="256" height="256" style="display:none;"></svg>
+  <div id="joinDiv" style="display:none;">
+	<p>Go to <a id="joinLink"></a> to join!</p>
+	<svg id="roomQr" width="256" height="256" style="display:none;"></svg>
+  </div>
   <br />
   <div id="Options" style="display:none;">
 	<p>Options Menu:</p>
@@ -54,13 +57,14 @@
 	<button id="saveConfig">Save</button>
   </div>
   <div id="Init" style="display:none;">
-	<button id="startButton">Start</button>
+	<button id="startButton">Create Lobby</button>
 	<!-- Temporarily hidden, as options are not fully functional yet. -->
 	<button id="optionsButton" style="display:none;">Options</button>
   </div>
   <div id="Connect" style="display:none;">
+	<p>Wait for all players to join, then press "Start Game".</p>
 	<p>Players Joined: <span id="playerCount">0</span></p>
-	<button id="goButton">Go</button>
+	<button id="goButton">Start Game</button>
 	<!-- TODO: Countdown and cancel button, like Jackbox. -->
   </div>
   <div id="Intro" style="display:none;"></div>

@@ -9,6 +9,8 @@ export let elements = {
     story: document.getElementById("story") as HTMLInputElement,
     startButton: document.getElementById("startButton") as HTMLButtonElement,
     optionsButton: document.getElementById("optionsButton") as HTMLButtonElement,
+    joinDiv: document.getElementById("joinDiv") as HTMLInputElement,
+    joinLink: document.getElementById("joinLink") as HTMLAnchorElement,
     roomQr: document.getElementById("roomQr") as HTMLInputElement, // TODO: Not reported by validate?
     roomCode: document.getElementById("roomCode") as HTMLInputElement,
     goButton: document.getElementById("goButton") as HTMLButtonElement,
@@ -60,6 +62,8 @@ function validate(elements: { [key: string]: unknown }) {
     } else if (typeof element === 'object' && element !== null) {
       // If the element is an object, recursively validate its properties
       validate(element as { [key: string]: unknown });
+    } else {
+      console.log(`Missing ${element}`);
     }
   });
 }

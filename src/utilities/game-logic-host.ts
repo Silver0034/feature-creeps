@@ -19,10 +19,10 @@ import type { CharacterSheet } from "./character-sheet";
 // TEMP: Specify some settings so we don't have to configure each time.
 state.options.numRounds = 3;
 state.options.tts.type = "kokoro";
-state.options.tts.voice = "Lewis";
+state.options.tts.voice = "Heart";
 state.options.inference.engine = "local";
-state.options.inference.modelName = "gemma-2-9b-it-q4f16_1-MLC";
-// state.options.playIntro = false;
+state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
+state.options.playIntro = false;
 
 const WebRTCServer = abilityMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC))))));
 let rtc: InstanceType<typeof WebRTCServer>;
@@ -136,9 +136,9 @@ async function connect() {
     return code;
   }
 
-  async function makeQr(roomId: string) {
+  async function makeQr(content: string) {
     const qrCode = new QRCode({
-      content: `${location.href}client/?r=${roomId}`,
+      content: content,
       padding: 0,
       ecl: "M",
       join: true,
@@ -152,7 +152,11 @@ async function connect() {
   // TODO: Make sure it's not already in use.
   state.room.roomId = generateRoomCode();
   elements.host.roomCode.textContent = state.room.roomId.toUpperCase();
-  makeQr(state.room.roomId);
+  const joinLink = `${location.href}join/?r=${state.room.roomId}`;
+  elements.host.joinLink.innerHTML = joinLink;
+  elements.host.joinLink.href = joinLink;
+  makeQr(joinLink);
+  elements.host.joinDiv.style.display = "block";
   console.log(state.room.roomId.toUpperCase());
   // Connect to the room.
   rtc = new WebRTCServer(state.room.roomId);
@@ -232,6 +236,7 @@ async function roundBattle() {
     elements.host.story.innerText = description;
     await longSpeak(description);
     winner.wins += 1;
+    console.log(`${winner.name} wins!`);
   }
 
   // Now that the battle has resolved, provide the full sheets to each player.

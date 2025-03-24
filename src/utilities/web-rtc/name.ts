@@ -61,7 +61,7 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
       );
     }
     public validateName(name: string): string | null {
-      if (name.length > 15) { return "Name is too long (>15 characters)."; }
+      if (name.length > 30) { return "Name is too long (>30 characters)."; }
       if (name.length <= 0) { return "Please fill in a name."; }
       // NOTE: We can do an initial client-side name duplication validation
       // easily if sendName() is broadcast globally, since we can store them and

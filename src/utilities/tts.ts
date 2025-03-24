@@ -433,6 +433,8 @@ async function speakSentences(
 }
 
 function chunkSpeech(text: string): string[] {
+  // TODO: Filter out sentences that consist only of a punctuation mark.
+  // Kokoro actually "speaks" them.
   const separators = /([.?!\n])/g;
   return text
     .split(separators)

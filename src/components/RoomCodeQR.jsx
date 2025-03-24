@@ -11,10 +11,9 @@ const RoomCodeQR = () => {
 		document.body.appendChild(script)
 
 		// Function to generate QR code
-		const generateQRCode = () => {
-			const roomCode = 'GUIJ'
+		const generateQRCode = (roomCode) => {
 			const qrcode = new window.QRCode({
-				content: location.host + '/client/?room=' + roomCode,
+				content: location.href + 'join/?r=' + roomCode,
 				padding: 4,
 				width: 256,
 				height: 256,
@@ -26,7 +25,8 @@ const RoomCodeQR = () => {
 		}
 
 		// Generate QR code after the script is loaded
-		script.onload = generateQRCode
+		const roomCode = 'GUIJ'
+		script.onload = generateQRCode(roomCode)
 
 		// Cleanup the script when the component unmounts
 		return () => {

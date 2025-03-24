@@ -26,7 +26,7 @@ export function updateMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           if (state.role != Role.Client) {
             throw new Error(`Ignoring state change sent by ${peerId} to a ${Role[state.role]}: ${GameState[data.state]}`);
           }
-          console.log(`Got state from ${peerId}: ${data.state}`);
+          console.log(`Got state from ${peerId}: ${GameState[data.state]}`);
           // Update state.
           state.gameState = data.state;
 

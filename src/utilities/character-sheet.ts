@@ -37,7 +37,8 @@ Weaknesses:
 ${weaknessesStr}`
 	}
 
-	static getSchema(level: number): object | string {
+	// TODO: Make the number of strengths and weaknesses no more than the character's level.
+	static getSchema(level: number, numAbilities: number): object | string {
 		// NOTE: The local inference engine only supports a subset of the required schema features. As a result, we cannot use minItems or const. This may generate slightly different character sheets than we want.
 		if (state.options.inference.engine === "local") {
 			return `{
@@ -68,12 +69,12 @@ ${weaknessesStr}`
 					strengths: {
 						type: 'array',
 						items: { type: 'string' },
-						minItems: 1
+						contains: numAbilities
 					},
 					weaknesses: {
 						type: 'array',
 						items: { type: 'string' },
-						minItems: 1
+						contains: numAbilities
 					}
 				},
 				required: ['name', 'className', 'level', 'strengths', 'weaknesses']
@@ -95,7 +96,8 @@ ${weaknessesStr}`
 		return JSON.stringify(this);
 	}
 
-	static fromJSON(json: string): CharacterSheet {
+	static fromJSON(json: any): CharacterSheet {
+		// TODO: Need to safe parse this too?
 		const parsedJson = JSON.parse(json);
 
 		// Extract required properties.

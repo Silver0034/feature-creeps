@@ -111,7 +111,6 @@ export async function roundAbilities() {
 
   function abilitySender() {
     const ability = elements.client.abilityInput.value.trim();
-    if (!ability) { throw Error("Invalid ability provided."); }
     rtc.sendAbility({ ability: ability }, state.hostId);
     elements.client.abilityInput.value = "";
     elements.client.abilityDiv.style.display = "none";
