@@ -22,7 +22,7 @@ function sanitizeJSON(jsonString: string): string {
 
 function safeParseJSON(jsonString: string): any | null {
   try {
-      const sanitized = sanitizeJSON(jsonString);
+      const sanitized = JSON.parse(jsonString);
       return safeParseJSON(sanitized);
   } catch (error) {
       console.error("Invalid JSON:", error);
