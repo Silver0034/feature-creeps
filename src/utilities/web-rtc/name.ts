@@ -3,6 +3,8 @@ import { elements } from "@utilities/elements";
 import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
+// TODO: Provide name feedback to verify that the name was valid server side, or to permit reentry.
+
 type NameData = { name: string };
 
 export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
@@ -63,7 +65,7 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
     public validateName(name: string): string | null {
       if (name.length > 30) { return "Name is too long (>30 characters)."; }
       if (name.length <= 0) { return "Please fill in a name."; }
-      // NOTE: We can do an initial client-side name duplication validation
+      // TODO: We can do an initial client-side name duplication validation
       // easily if sendName() is broadcast globally, since we can store them and
       // find them here.
       if (state.players.some(player => player.sheet.name === name)) {
