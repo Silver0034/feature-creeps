@@ -6,7 +6,7 @@ import { GameState, Role, state } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
 type AbilityData = { ability: string };
-type AbilityFBData = { feedback: string };
+type AbilityFBData = { isValid: boolean, feedback: string };
 
 export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
@@ -46,16 +46,20 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             throw Error(`Could not find player with peerId ${peerId}`);
           }
           const [isValid, validation] = await validateAbility(player.sheet, data.ability);
-          if (!isValid && validation) {
+          sendAbilityFB({
+            isValid: isValid,
+            feedback: validation ?
+              validation :
+              "This ability conflicts with your existing abilities."
+          });
+          // TODO: As soon as we know it's valid, we should be able to resolve
+          // the player's promise. However, it is currently unsafe to do this
+          // because that same promise is also ensuring all pre-combat LLM
+          // generations have finished. Rework this.
+          if (!isValid) {
             this.inProgress.delete(peerId);
-            sendAbilityFB({
-              feedback: validation ?
-                validation :
-                "This ability conflicts with your existing abilities."
-            });
             return;
-          }
-          if (isValid) {
+          } else {
             // TODO: Assuming it's a strength for now.
             player.sheet.strengths.push(data.ability);
             // Only add a complimentary weakness if it isn't already there.
@@ -70,12 +74,12 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             if (!resolver) {
               throw Error(`No pending ability promise found for peerId: ${peerId}`);
             }
-            // Resolve the promise so game logic knows this player is ready.
-            resolver();
-
             // NOTE: Pushing this should ensure that battles are usually
             // resolved in the order of the list, for faster roundBattle logic.
             promises.battles.push(combat(player.sheet, state.enemies[state.round - 1]));
+
+            // Resolve the promise so game logic knows this player is ready.
+            resolver();
           }
         } catch (error) {
           console.error(error);
@@ -94,6 +98,10 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           }
           if (state.gameState != GameState.RoundAbilities) {
             throw new Error(`Ignoring ability feedback sent by ${peerId} while in the ${GameState[state.gameState]} state: ${data.feedback}`);
+          }
+          if(data.isValid) {
+            console.log("Ability accepted!");
+            return;
           }
           // TODO: Display this in the GUI.
           console.log(`Got ability feedback from ${peerId}: ${data.feedback}`);
@@ -124,7 +132,9 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
         typeof data === "object" &&
         data !== null &&
         "feedback" in data &&
-        typeof data.feedback === "string"
+        typeof data.feedback === "string" &&
+        "isValid" in data &&
+        typeof data.isValid === "boolean"
       );
     }
   };

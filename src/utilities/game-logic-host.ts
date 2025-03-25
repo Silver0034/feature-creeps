@@ -43,6 +43,11 @@ const VALID_OPTIONS = {
   ] as [string, string][],
 };
 
+// TODO: analyze all places where we log to console.
+// Be sure to put most of it on-screen for players to see.
+
+// TODO: Music system. Layered instruments.
+
 export async function main(): Promise<void> {
   state.role = Role.Host;
   state.hostId = selfId;
@@ -114,6 +119,10 @@ export async function runStateLogic(newState?: GameState) {
 async function init() {
   elements.host.startButton.addEventListener("click", async () => {
     // Make sure the inference engines are ready to go.
+    // TODO: Sometimes these fail to initialize on first use. Figure out why,
+    // and, failing that, figure out how to warn the host.
+    // TODO: Provide loading progress for these. Especially because new models
+    // can take a long time to download on first use.
     promises.tts = initTts({ reload: false });
     promises.llm = initLlm({ reload: false });
 
@@ -148,10 +157,13 @@ async function connect() {
     elements.host.roomQr.style.display = "block";
   }
 
+  // TODO: Request full screen on game start.
+
   // Generate a room code.
   // TODO: Make sure it's not already in use.
   state.room.roomId = generateRoomCode();
   elements.host.roomCode.textContent = state.room.roomId.toUpperCase();
+  // TODO: Add copy link button next to join link.
   const joinLink = `${location.href}join/?r=${state.room.roomId}`;
   elements.host.joinLink.innerHTML = joinLink;
   elements.host.joinLink.href = joinLink;
@@ -213,7 +225,13 @@ async function roundAbilities() {
   // Display the current creep.
   console.log(state.enemies[state.round - 1].toString());
 
+  // TODO: Add a timer.
+  // https://stackoverflow.com/questions/73389954/how-to-sync-html5-audio-across-browsers
+  // TODO: Add a “safety quip” fallback is a user doesn’t answer in time or
+  // chooses to have AI generate for them. Make them silly. 
+
   // Request new abilities from players.
+  // TODO: Point out last players that need to decide abilities, on-screen.
   await Promise.all(promises.players);
 
   if (state.round == state.options.numRounds) {
@@ -230,14 +248,22 @@ async function roundBattle() {
   // Play out each battle.
   for (const promise of promises.battles) {
     const [winner, description, c1, c2] = await promise;
+    // TODO: Show player cards on screen.
     console.log(`${c1.name} vs ${c2.name}`);
     console.log(c1.toString());
     console.log(c2.toString());
+    // TODO: Combat sounds system.
     elements.host.story.innerText = description;
     await longSpeak(description);
     winner.wins += 1;
     console.log(`${winner.name} wins!`);
   }
+
+  // TODO: Let players vote on player-chosen ability (👍 or 👎).
+  // This will probably require another mixin.
+
+  // TODO: Show scoreboard on screen.
+  // TODO: Use this to provide a small delay between rounds.
 
   // Now that the battle has resolved, provide the full sheets to each player.
   for (const player of state.players) {
@@ -268,6 +294,7 @@ async function battleRoyale() {
 }
 
 async function leaderboard() {
+  // TODO: Show scoreboard on screen.
   function printScoreboard(): void {
     const leaderboard = state.players.map((player) => player.sheet).slice().sort((a, b) => b.wins - a.wins);
     console.log("Leaderboard:");
@@ -289,6 +316,9 @@ async function end() {
   state.players = [];
   state.enemies = [];
 
+  // TODO: Add reset game without refreshing page
+  // TODO: Add ability to restart with same group.
+
   // Go back to init.
   // Rather than using runStateLogic(), we would like to instead let the
   // function calls resolve back to init(). This requires all functions return
@@ -297,6 +327,7 @@ async function end() {
 }
 
 // TODO: Make everything in this menu functional.
+// TODO: Storytellers with different personalities and voices?
 async function options() {
   function populateDropdown(element: HTMLSelectElement, options: string[], defaultValue: string = "") {
     const optionPairs: [string, string][] = options.map((option) => [option, option]);

@@ -1,7 +1,10 @@
 import * as trystero from "trystero/mqtt";
 import * as packageJson from "package.json"
 // Note: Hard limit of 500 WebRTC connections are supported in Chrome.
+
 // TODO: Consider setting up TURN servers to support phones on mobile data.
+
+// TODO: See if we can filter out spurious WebRTC server handshake errors.
 
 const config: trystero.BaseRoomConfig = {
   // Set the App ID based on the host, package name, and package version.

@@ -88,6 +88,8 @@ export async function connect() {
     }
   });
 
+  // TODO: Provide a selection of character portraits and sounds.
+
   // TODO: Press the start button.
   // TODO: Make a skip mixin.
   if (state.vipId == selfId) {

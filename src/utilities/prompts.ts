@@ -5,6 +5,9 @@ import { state } from "@utilities/state"
 // TODO: Consider a prompt queue to avoid overloading WebLLM. Maybe even make
 // TTS generation part of the queue if it uses WebGPU.
 
+// TODO: Test models and provide info about which we recommend.
+// Make a test page for players to figure out which models they want to use.
+
 function sanitizeJSON(jsonString: string): string {
   return jsonString
       .replace(/[\b\f\n\r\t]/g, (char) => {
@@ -232,6 +235,9 @@ export async function validateAbility(
   return [true, null];
 }
 
+// TODO: Consider reworking this. I think that " characters can cause battles to
+// end prematurely due to JSON formatting. Perhaps do two separate prompts
+// instead of using a format schema.
 export async function combat(
   c1: CharacterSheet,
   c2: CharacterSheet
@@ -282,6 +288,7 @@ Output: { "fight_description": "Lady Seraphina stayed airborne, blasting Grimgor
 }
 
 // TODO: Allow players (and the audience) to provide enemy suggestions.
+// TODO: Figure out why creep generation is so bad right now.
 export async function generateEnemy(level: number): Promise<CharacterSheet> {
   const adjustedLevel = Math.ceil(20 * level / state.options.numRounds);
   // TODO: Final boss monster should take existing player abilities into account and create something specifically designed to counter as many players as possible.
