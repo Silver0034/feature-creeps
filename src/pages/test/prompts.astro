@@ -2,7 +2,10 @@
 
 ---
 
+
 <script>
+  // TODO: Make sure local and API-based approaches are fully functional.
+
   import { CharacterSheet } from "@utilities/character-sheet";
   import { initLlm } from "@utilities/openai";
   import { state } from "@utilities/state";
@@ -24,8 +27,13 @@
 
   const llmPromise = initLlm({
     engine: "local",
-    modelName: "gemma-2-9b-it-q4f16_1-MLC",
+    modelName: "Qwen3-8B-q4f16_1-MLC",
   });
+  // const llmPromise = initLlm({
+  //   engine: "API",
+  //   apiURL: "http://192.168.0.12:1234/v1",
+  //   apiKey: "lm-studio",
+  // });
   let ttsPromise: Promise<TTS | undefined>;
   if (SPEAK) {
     ttsPromise = initTts({ type: "kokoro", voice: "Heart" });
@@ -85,11 +93,7 @@
     const validateAbilityPromise = validateAbility(vorlok, ability);
     const combatPromise = combat(vorlok, microwave);
     const generateEnemyPromise = generateEnemy(3);
-    const genBattleRoyalePromise = genBattleRoyale([
-      vorlok,
-      microwave,
-      alastor,
-    ]);
+    let genBattleRoyalePromise = genBattleRoyale([vorlok, microwave, alastor]);
 
     try {
       const result: any = await isStrengthPromise;
@@ -179,17 +183,20 @@
       console.error("Error generating text:", error);
     }
 
-    try {
-      const result: any = await genBattleRoyalePromise;
-      console.log(JSON.stringify(result, null, 2));
-      if (SPEAK) {
-        await speechPromise;
-        speechPromise = longSpeak(
-          "The results of the battle royale are as follows: " + result[1]
-        );
+    while (true) {
+      try {
+        const result: any = await genBattleRoyalePromise;
+        genBattleRoyalePromise = genBattleRoyale([vorlok, microwave, alastor]);
+        console.log(JSON.stringify(result, null, 2));
+        if (SPEAK) {
+          await speechPromise;
+          speechPromise = longSpeak(
+            "The results of the battle royale are as follows: " + result[1]
+          );
+        }
+      } catch (error) {
+        console.error("Error generating text:", error);
       }
-    } catch (error) {
-      console.error("Error generating text:", error);
     }
   }
 

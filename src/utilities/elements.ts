@@ -7,6 +7,8 @@ export let elements = {
   host: {
     playerCount: document.getElementById("playerCount") as HTMLElement,
     story: document.getElementById("story") as HTMLInputElement,
+    player: document.getElementById("player") as HTMLInputElement,
+    enemy: document.getElementById("enemy") as HTMLInputElement,
     startButton: document.getElementById("startButton") as HTMLButtonElement,
     optionsButton: document.getElementById("optionsButton") as HTMLButtonElement,
     joinDiv: document.getElementById("joinDiv") as HTMLInputElement,
@@ -27,6 +29,7 @@ export let elements = {
     }
   },
   client: {
+    feedback: document.getElementById("feedback") as HTMLInputElement,
     nameDiv: document.getElementById("nameDiv") as HTMLInputElement,
     roomDiv: document.getElementById("roomDiv") as HTMLInputElement,
     abilityDiv: document.getElementById("abilityDiv") as HTMLInputElement,

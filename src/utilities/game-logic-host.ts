@@ -21,7 +21,9 @@ state.options.numRounds = 3;
 state.options.tts.type = "kokoro";
 state.options.tts.voice = "Heart";
 state.options.inference.engine = "local";
-state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
+// state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
+// state.options.inference.modelName = "gemma-2-9b-it-q4f16_1-MLC";
+state.options.inference.modelName = "Qwen3-8B-q4f16_1-MLC";
 state.options.playIntro = false;
 
 const WebRTCServer = abilityMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC))))));
@@ -209,6 +211,8 @@ async function intro() {
   if (state.options.playIntro) {
     // Explain game rules.
     explainString = "Feature Creeps is a roleplaying adventure game where players level up, add new abilities to their character sheets, and face monsters. Every round, a randomly generated Creep will appear. You'll have the chance to read their character sheet before deciding how to improve your character to face them in combat. When you add a new strength, you can write down literally anything you want, so long as it isn't in conflict with your existing abilities. Let your imagination run wild! But don't be too greedy: with every strength you add to your character, an equally harmful weakness gets added too. Keep in mind the final bonus round, where players will fight each other in a climatic battle royale. Can you survive, or will feature creep be your own undoing?";
+    // Don't play the intro multiple times in the same session.
+    state.options.playIntro = false;
   } else {
     explainString = "Let the games begin!";
   }
@@ -223,7 +227,10 @@ async function intro() {
 
 async function roundAbilities() {
   // Display the current creep.
-  console.log(state.enemies[state.round - 1].toString());
+  const enemyString = state.enemies[state.round - 1].toString();
+  console.log(enemyString);
+  elements.host.enemy.innerText = enemyString;
+  elements.host.player.innerText = "";
 
   // TODO: Add a timer.
   // https://stackoverflow.com/questions/73389954/how-to-sync-html5-audio-across-browsers
@@ -249,6 +256,13 @@ async function roundBattle() {
   for (const promise of promises.battles) {
     const [winner, description, c1, c2] = await promise;
     // TODO: Show player cards on screen.
+    // TEMP: Don't care about who is the player and who is the enemy yet. A more
+    // permanent system may be to randomize c1 and c2 internally in the request
+    // instead of in the game logic. That way, c1 is always the player. We would
+    // also benefit from having access to the player's sheet before getting the
+    // response.
+    elements.host.player.innerText = c1.toString();
+    elements.host.enemy.innerText = c2.toString();
     console.log(`${c1.name} vs ${c2.name}`);
     console.log(c1.toString());
     console.log(c2.toString());
@@ -329,6 +343,8 @@ async function end() {
 // TODO: Make everything in this menu functional.
 // TODO: Storytellers with different personalities and voices?
 async function options() {
+  let models: any[] = [];
+
   function populateDropdown(element: HTMLSelectElement, options: string[], defaultValue: string = "") {
     const optionPairs: [string, string][] = options.map((option) => [option, option]);
     populateDropdownPairs(element, optionPairs, defaultValue);
@@ -344,19 +360,22 @@ async function options() {
     });
     element.value = defaultValue;
   }
+
   async function updateLlmLists() {
     if (!VALID_OPTIONS.inferenceEngine
       .map(([value, _]) => value)
       .includes(elements.host.options.inferenceEngine.value)) {
       return;
     }
+
     state.options.inference.engine = elements.host.options.inferenceEngine.value;
+
     if (state.options.inference.engine === "local") {
       elements.host.options.inferenceApiUrl.style.display = "none";
       elements.host.options.inferenceApiKey.style.display = "none";
 
-      const models = await listModels();
-      // const modelStrings = models.map(model => model.model_id);
+      models = await listModels();
+
       const modelStrings = models.map((model): [string, string] => {
         const vram = model.vram_required_MB;
         const formattedVram = vram ?
@@ -367,39 +386,80 @@ async function options() {
         return [model.model_id,
         `${model.model_id.replaceAll("-", " ")}${formattedVram}`];
       });
+
       populateDropdownPairs(elements.host.options.inferenceModel, modelStrings, state.options.inference.modelName || "Choose an LLM engine first.");
 
       elements.host.options.inferenceModel.style.display = "block";
-    } else if (state.options.inference.engine == "API") {
+    } else if (state.options.inference.engine === "API") {
       elements.host.options.inferenceModel.style.display = "none";
-
       elements.host.options.inferenceApiUrl.style.display = "block";
       elements.host.options.inferenceApiKey.style.display = "block";
     }
   }
+
   async function updateTtsLists() {
     if (!VALID_OPTIONS.ttsType
       .map(([value, _]) => value)
       .includes(elements.host.options.ttsType.value)) {
       return;
     }
+
     state.options.tts.type = elements.host.options.ttsType.value;
+
     if (state.options.tts.type === "none") {
       return;
     }
+
     await initTts({
       type: state.options.tts.type,
       reload: false
-    })
+    });
+
     const ttsVoiceOptions = await tts?.listModels();
     elements.host.options.ttsVoice.innerHTML = "";
     if (!ttsVoiceOptions) { return; }
+
     ttsVoiceOptions.forEach(voice => {
       const opt = document.createElement("option");
       opt.value = voice;
       opt.textContent = voice;
       elements.host.options.ttsVoice.appendChild(opt);
     });
+  }
+
+  function updateVramBar() {
+    let totalVram = 0;
+
+    // Get LLM VRAM usage.
+    if (state.options.inference.engine === "local") {
+      const selectedModelId = state.options.inference.modelName;
+      const selectedModel = models.find(model => model.model_id === selectedModelId);
+      if (selectedModel && selectedModel.vram_required_MB !== undefined) {
+        // Convert MB to GB.
+        const modelVramGB = selectedModel.vram_required_MB / 1024;
+        totalVram += modelVramGB;
+        // A fudge factor to account for additional VRAM consumed by context, etc.
+        totalVram += 1.6;
+      }
+    }
+
+    // Get TTS VRAM usage.
+    // Only Kokoro consumes VRAM.
+    if (state.options.tts.type === "kokoro") {
+      const ttsVramGB = 0.8;
+      totalVram += ttsVramGB;
+    }
+
+    const bar = document.getElementById('vramBar');
+    const text = document.getElementById('vramText');
+
+    if (bar && text) {
+      // A "max VRAM", which we cannot actually know due to WebGPU security.
+      const maxVram = 32;
+      const percentage = (totalVram / maxVram) * 100;
+      bar.style.width = `${Math.min(percentage, 100)}%`;
+      text.textContent = `VRAM Usage: ${totalVram.toFixed(1)} GB`;
+    }
   }
 
   // Load current state.
@@ -413,6 +473,7 @@ async function options() {
   populateDropdownPairs(elements.host.options.ttsType, VALID_OPTIONS.ttsType, state.options.tts.type || "Choose a TTS engine first.");
   await updateTtsLists();
   elements.host.options.ttsVoice.value = state.options.tts.voice || "Choose a TTS engine first.";
+  updateVramBar();
 
   elements.host.options.inferenceEngine.addEventListener("change", async () => {
     const selectedValue = elements.host.options.inferenceEngine.value;
@@ -420,9 +481,13 @@ async function options() {
       .map(([value, _]) => value)
       .includes(selectedValue)) {
       state.options.inference.engine = selectedValue;
+      updateVramBar();
       await updateLlmLists();
     }
   });
+
+  // TODO: Add an event listener for changing the LLM model.
+  // Update VRAM bar when you do.
 
   elements.host.options.ttsType.addEventListener("change", async () => {
     const selectedValue = elements.host.options.ttsType.value;
@@ -430,9 +495,13 @@ async function options() {
       .map(([value, _]) => value)
       .includes(selectedValue)) {
       state.options.tts.type = selectedValue;
+      updateVramBar();
       await updateTtsLists();
     }
   });
+
+  // TODO: Add an event listener for changing the TTS model.
+  // Update VRAM bar when you do.
 
   elements.host.options.saveConfig.addEventListener("click", async () => {
     // Save updated state.
@@ -443,7 +512,7 @@ async function options() {
     }
     state.options.inference.engine = elements.host.options.inferenceEngine.value;
     state.options.inference.modelName = elements.host.options.inferenceModel.value;
-    const parsedTemperature = parseInt(elements.host.options.temperature.value);
+    const parsedTemperature = parseFloat(elements.host.options.temperature.value);
     if (0 <= parsedTemperature && parsedTemperature >= 2) {
       state.options.inference.temperature = parsedTemperature;
       // TODO: On-screen warning.

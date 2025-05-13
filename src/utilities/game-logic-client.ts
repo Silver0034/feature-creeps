@@ -70,12 +70,14 @@ export async function connect() {
     const input = elements.client.nameInput.value.trim();
     if (input) {
       const validationResponse = rtc.validateName(input);
+      elements.client.nameInput.value = "";
       if (!validationResponse) {
         rtc.sendName({ name: input }, state.hostId);
-        // TODO: May need to display this again if we get name entry feedback.
+        elements.client.feedback.innerText = "";
         elements.client.nameDiv.style.display = "none";
       } else {
         console.warn(`Invalid name: ${validationResponse}`);
+        rtc.HandleInvalidName(validationResponse);
       }
     }
   }
@@ -111,9 +113,11 @@ export async function roundAbilities() {
   // Show current player sheet.
   console.log(state.players.find((player) => player.peerId == selfId)?.sheet.toString());
 
+  // TODO: Figure out why this triggers multiple times sometimes.
   function abilitySender() {
     const ability = elements.client.abilityInput.value.trim();
     rtc.sendAbility({ ability: ability }, state.hostId);
+    elements.client.feedback.innerText = "";
     elements.client.abilityInput.value = "";
     elements.client.abilityDiv.style.display = "none";
   }

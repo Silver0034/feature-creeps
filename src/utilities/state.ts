@@ -90,7 +90,7 @@ export let state: State = {
     inference: {
       engine: undefined,
       modelName: undefined,
-      temperature: 1, // 0.7 is OpenAI default.
+      temperature: 0.7, // 0.7 is OpenAI default.
       apiURL: undefined,
       apiKey: "sk-no-key-required" as string
     } as InferenceConfig,

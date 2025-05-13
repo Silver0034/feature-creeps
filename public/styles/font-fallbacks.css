@@ -9,7 +9,7 @@
 }
 @font-face {
   font-family: "Alegreya Fallback: Roboto";
-  src: local('Roboto'), local('Roboto-Regular');
+  src: local('Roboto Regular'), local('Roboto-Regular');
   font-display: swap;
   ascent-override: 79.4273%;
   descent-override: 26.9709%;
@@ -25,7 +25,7 @@
 }
 @font-face {
   font-family: "Permanent Marker Fallback: Roboto";
-  src: local('Roboto'), local('Roboto-Regular');
+  src: local('Roboto Regular'), local('Roboto-Regular');
   font-display: swap;
   ascent-override: 97.3642%;
   descent-override: 27.8551%;

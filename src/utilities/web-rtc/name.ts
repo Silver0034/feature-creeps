@@ -3,14 +3,14 @@ import { elements } from "@utilities/elements";
 import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
-// TODO: Provide name feedback to verify that the name was valid server side, or to permit reentry.
-
 type NameData = { name: string };
+type NameFBData = { isValid: boolean, feedback: string };
 
 export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
     private nameLock = new AsyncLock.default();
     public sendName!: (data: NameData, peerId?: string) => void;
+    public sendNameFB!: (data: NameFBData, peerId?: string) => void;
     constructor(...args: any[]) {
       super(...args);
       this.registerNameActions();
@@ -45,10 +45,36 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
                 (parseInt(elements.host.playerCount.innerText) + 1)
                   .toString();
             } else {
-              // TODO: Add name feedback if it fails to validate with the host.
               console.warn(`Name validation failed for ${data.name}: ${validationError}`);
             }
+            sendNameFB({
+              isValid: !Boolean(validationError),
+              feedback: validationError ? validationError : ""
+            });
           });
+        } catch (error) {
+          console.error(error);
+        }
+      });
+      const [sendNameFB, getNameFB] = this.room.makeAction<NameFBData>("NameFB");
+      this.sendNameFB = sendNameFB;
+      getNameFB(async (data, peerId) => {
+        try {
+          if (!this.isNameFBData(data)) {
+            throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
+          }
+          if (state.role != Role.Client) {
+            throw new Error(`Ignoring name feedback sent by ${peerId} to a ${Role[state.role]}: ${data.feedback}`);
+          }
+          if (state.gameState != GameState.Connect) {
+            throw new Error(`Ignoring name feedback sent by ${peerId} while in the ${GameState[state.gameState]} state: ${data.feedback}`);
+          }
+          if (data.isValid) {
+            console.log("Name accepted!");
+            return;
+          }
+          console.log(`Got name feedback from ${peerId}: ${data.feedback}`);
+          this.HandleInvalidName(data.feedback);
         } catch (error) {
           console.error(error);
         }
@@ -62,9 +88,23 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
         typeof data.name === "string"
       );
     }
+    private isNameFBData(data: any): data is NameFBData {
+      return (
+        typeof data === "object" &&
+        data !== null &&
+        "feedback" in data &&
+        typeof data.feedback === "string" &&
+        "isValid" in data &&
+        typeof data.isValid === "boolean"
+      );
+    }
     public validateName(name: string): string | null {
-      if (name.length > 30) { return "Name is too long (>30 characters)."; }
-      if (name.length <= 0) { return "Please fill in a name."; }
+      const maxLength = 30;
+      if (name.length <= 0) {
+        return "Please fill in a name.";
+      } else if (name.length > maxLength) {
+        return `Name is too long (>${maxLength} characters).`;
+      }
       // TODO: We can do an initial client-side name duplication validation
       // easily if sendName() is broadcast globally, since we can store them and
       // find them here.
@@ -72,6 +112,24 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
         return "Name already in use.";
       }
       return null;
+    }
+    public HandleInvalidName(feedback: string) {
+      if (state.role != Role.Client) {
+        throw new Error(`Triggered handling of an invalid name on a non-client: ${feedback}`);
+      }
+      elements.client.feedback.innerText = `Invalid name: ${feedback}`;
+
+      // Re-enable name form in the GUI.
+      elements.client.nameDiv.style.display = "inline";
+
+      // Make sure the user knows that they need to revise their name.
+      // TODO: Make this optional?
+      navigator.vibrate(200);
+      // Play a notification tone.
+      const audio = new Audio("/sounds/bottleTap.flac");
+      audio.play().catch(error => {
+        console.error("Failed to play notification tone:", error);
+      });
     }
   };
 }

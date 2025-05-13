@@ -10,37 +10,30 @@ import { state } from "@utilities/state"
 
 function sanitizeJSON(jsonString: string): string {
   return jsonString
-      .replace(/[\b\f\n\r\t]/g, (char) => {
-          switch (char) {
-              case '\\b': return '\b';
-              case '\\f': return '\f';
-              case '\\n': return '\n';
-              case '\\r': return '\r';
-              case '\\t': return '\t';  // Replace tab with a space
-              default: return '';
-          }
-      })
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ''); // Remove other control characters
+    // Replace improperly escaped whitespace characters.
+    .replace(/[\b\f\n\r\t]/g, (char) => {
+      switch (char) {
+        case '\\b': return '\b';
+        case '\\f': return '\f';
+        case '\\n': return '\n';
+        case '\\r': return '\r';
+        case '\\t': return '\t';
+        default: return char;
+      }
+    })
+    // Remove other control characters
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
 }
 
 function safeParseJSON(jsonString: string): any | null {
   try {
-      const sanitized = JSON.parse(jsonString);
-      return safeParseJSON(sanitized);
+    const sanitized = sanitizeJSON(jsonString);
+    return JSON.parse(sanitized);
   } catch (error) {
-      console.error("Invalid JSON:", error);
-      return null;
+    console.error("Invalid JSON:", error);
+    return null;
   }
 }
-
-// Example Usage
-const rawJSON = `{
-  "battle_description": "The battle began...\\tThe warriors clashed...",
-  "winner": "Arden Swiftblade"
-}`;
-
-const parsedData = safeParseJSON(rawJSON);
-console.log(parsedData);
 
 export async function isStrength(
   character: CharacterSheet,
@@ -250,13 +243,7 @@ export async function combat(
     messages: [
       {
         'role': 'system',
-        'content': `You are an expert in narrating epic battles between characters. Given the character sheets for two combatants, craft a brief but thrilling account of their fight. Incorporate their strengths and weaknesses dynamically and only when relevant, and engage the reader with tension, creativity, humor, and other exciting literary techniques. Keep the description to a single paragraph and determine the victor based on their abilities.
-
-Instructions:
-1. Analyze Character Sheets: Examine the strengths and weaknesses of both characters. Consider how these traits might influence the outcome of the battle.
-2. Narrate the Fight: Write a brief yet entertaining description of the battle. The fight should be dynamic, incorporating only the relevant abilities of each character, and should include moments of tension, humor, or surprise when appropriate. End with a decisive victor.
-3. Determine the Winner: Based on the characters' strengths and weaknesses, decide which character would most likely emerge victorious. The decision should be logical and reflect the characters' relative skills.
-4. Output Format: The output must be in JSON format, including a field named "fight_description", providing the description of the fight and a field named "winner", containing the name of the winner.
+        'content': `You are an expert in narrating epic battles between characters. Given the character sheets for two combatants, craft a brief but thrilling account of their fight. Incorporate their strengths and weaknesses dynamically and only when relevant, and engage the reader with tension, creativity, humor, and other exciting literary techniques. Keep the description to a single paragraph. The story ends with a single, decisive victor.
 
 Examples:
 
@@ -417,47 +404,37 @@ export async function genBattleRoyale(players: CharacterSheet[]): Promise<[Chara
     messages: [
       {
         'role': 'system',
-        'content': `You are an expert in crafting epic, cinematic battles between groups of unique characters, reminiscent of the grand, climactic showdowns in blockbuster movies. Given the character sheets for a group of combatants, create a vivid and thrilling narrative of their battle royale. Each character should have a moment to shine, showcasing their strengths, quirks, and weaknesses dynamically. The story should be filled with some combination of tension, creativity, unexpected alliances, betrayals, and dramatic shifts, ensuring that every participant plays a significant role. The narrative should capture the intensity of an all-out battle, and only one can emerge victorious.
-    
-    Instructions:
-    
-    Analyze Character Sheets: Examine the strengths, weaknesses, and personality traits of all the characters involved. Consider how these aspects might influence their interactions and the battle's outcome.
-    Narrate the Battle: Write an exciting, action-packed account of the battle royale. The fight should be dynamic, with each character making meaningful contributions or suffering from their vulnerabilities. The description should include moments of tension, clever tactics, humor, or surprise when appropriate, echoing the energy of an epic final battle.
-    Determine the Winner: Based on the characters' strengths, weaknesses, and the flow of battle, write an outcome based on who, logically, would most likely be the last one standing. This decision should primarily reflect the characters' abilities but also the narrative's progression.
-    Output Format: The output must be in JSON format, with a field named "battle_description" providing the detailed account of the battle to its climactic end, and a field named "winner" containing the name of the ultimate victor.
-    
-    Example:
-    
-    Input:
+        'content': `You are an expert in crafting epic, cinematic battles between groups of unique characters, reminiscent of the grand, climactic showdowns in blockbuster movies. Given the character sheets for a group of combatants, create a vivid and thrilling narrative of their battle royale. Each character should have a moment to shine, showcasing their strengths, quirks, and weaknesses dynamically. The story should be filled with some combination of tension, creativity, unexpected alliances, betrayals, and dramatic shifts, ensuring that every participant plays a significant role. The narrative should capture the intensity of an all-out battle. The story ends with a single, decisive victor.
+Input:
+{
+  "characters": [
     {
-      "characters": [
-        {
-          "name": "Arden Swiftblade",
-          "strengths": ["Superhuman speed", "Master swordsman", "Keen reflexes"],
-          "weaknesses": ["Impatient", "Overconfident"]
-        },
-        {
-          "name": "Morgath the Infernal",
-          "strengths": ["Fire manipulation", "Immense strength", "Intimidating presence"],
-          "weaknesses": ["Slow", "Susceptible to water"]
-        },
-        {
-          "name": "Lady Seraphina",
-          "strengths": ["Flight", "Healing magic", "Divine light"],
-          "weaknesses": ["Fragile", "Limited magic reserves"]
-        },
-        {
-          "name": "Grimgor the Unyielding",
-          "strengths": ["Unbreakable armor", "Brute strength", "Battle tactics"],
-          "weaknesses": ["Slow", "Easily enraged"]
-        }
-      ]
+      "name": "Arden Swiftblade",
+      "strengths": ["Superhuman speed", "Master swordsman", "Keen reflexes"],
+      "weaknesses": ["Impatient", "Overconfident"]
+    },
+    {
+      "name": "Morgath the Infernal",
+      "strengths": ["Fire manipulation", "Immense strength", "Intimidating presence"],
+      "weaknesses": ["Slow", "Susceptible to water"]
+    },
+    {
+      "name": "Lady Seraphina",
+      "strengths": ["Flight", "Healing magic", "Divine light"],
+      "weaknesses": ["Fragile", "Limited magic reserves"]
+    },
+    {
+      "name": "Grimgor the Unyielding",
+      "strengths": ["Unbreakable armor", "Brute strength", "Battle tactics"],
+      "weaknesses": ["Slow", "Easily enraged"]
     }
-    Output:
-    {
-        "battle_description": "In the heart of an ancient, crumbling arena crisscrossed by a sacred, misty river, four legendary combatants gathered for an all-out battle royale. The air was thick with tension as Arden Swiftblade, a blur of motion with superhuman speed and masterful swordsmanship, darted across the battlefield, his every move a dance of razor-edged precision—yet his overconfidence and impatience loomed like a shadow over his brilliance. Morgath the Infernal emerged next, his intimidating presence heralded by roaring flames and immense strength. His fire manipulation set the ruins ablaze, but his sluggish movements and vulnerability to water made him an unpredictable threat. Soaring above it all was Lady Seraphina, her graceful flight and divine light weaving healing magic into the chaos. Despite her fragile form and dwindling magical reserves, she was determined to protect the innocent and bring balance to the fray. Finally, Grimgor the Unyielding stomped into the arena, his unbreakable armor and brute strength a living fortress on legs. Though his deliberate, slow pace and easily kindled rage could be exploited, his tactical mind promised a deadly precision in combat.\nThe battle erupted in a cascade of clashing steel and elemental fury. Arden launched a series of rapid strikes toward Morgath, who countered with sweeping arcs of fire. Arden’s swift dodges saved him, yet his impetuous taunts distracted him long enough for a colliding charge from Grimgor to nearly knock him off balance. Overhead, Lady Seraphina circled protectively, unleashing bursts of divine light that not only healed minor wounds but also momentarily dazzled Morgath, forcing him to recoil from her radiance.\nRecognizing the existential threat posed by Morgath’s infernal blaze, an uneasy, temporary alliance formed between Arden and Lady Seraphina. Together, they lured Morgath toward the river, a strategic gambit exploiting his well-known susceptibility to water. As Morgath advanced with a sneering confidence, his slow, lumbering steps carried him dangerously close to the flowing, sacred water. In a fateful twist, the river’s spray doused his flames, leaving him sputtering and exposed. Enraged by the setback, Morgath tried to rally, unleashing a torrent of fire that collided spectacularly with Seraphina’s divine light in a dazzling, elemental explosion.\nSeizing the moment, Grimgor charged with a measured, thunderous roar, his battle-hardened tactics coming to the fore. His massive blow struck Morgath squarely, sending the infernal warrior reeling toward the river. Morgath’s flames faltered under the onslaught of water and raw force, and with one final, crushing strike from Grimgor, he was hurled into the churning current, his threat extinguished.\nNow the battlefield narrowed to a final showdown between the nimble Arden Swiftblade, the resolute Lady Seraphina, and the indomitable Grimgor. Arden’s relentless dashes and precise swordplay battered at Grimgor’s armored defenses, yet his overzealous attacks left him vulnerable to the giant’s calculated ripostes. In a climactic exchange, Grimgor feinted a retreat only to launch a devastating counterattack. Caught off guard by the measured ferocity of his opponent, Arden was struck down, his speed no longer enough to defy Grimgor’s inexorable might.\nLady Seraphina, determined to use her remaining divine power, created a radiant barrier that deflected Grimgor’s next heavy blow. But the effort drained her already limited magical reserves, leaving her weakened and forced to retreat from the blood-soaked arena. As the dust settled, with the echoes of clashing steel and extinguished flames still lingering in the air, only one figure stood unchallenged amidst the ruin: Grimgor the Unyielding. His unbreakable armor, relentless strength, and calculated tactics had seen him through the treacherous battle, making him the sole victor in this epic clash of legends.",
-        "winner": "Grimgor the Unyielding"
-    }`,
+  ]
+}
+Output:
+{
+    "battle_description": "In the heart of an ancient, crumbling arena crisscrossed by a sacred, misty river, four legendary combatants gathered for an all-out battle royale. The air was thick with tension as Arden Swiftblade, a blur of motion with superhuman speed and masterful swordsmanship, darted across the battlefield, his every move a dance of razor-edged precision—yet his overconfidence and impatience loomed like a shadow over his brilliance. Morgath the Infernal emerged next, his intimidating presence heralded by roaring flames and immense strength. His fire manipulation set the ruins ablaze, but his sluggish movements and vulnerability to water made him an unpredictable threat. Soaring above it all was Lady Seraphina, her graceful flight and divine light weaving healing magic into the chaos. Despite her fragile form and dwindling magical reserves, she was determined to protect the innocent and bring balance to the fray. Finally, Grimgor the Unyielding stomped into the arena, his unbreakable armor and brute strength a living fortress on legs. Though his deliberate, slow pace and easily kindled rage could be exploited, his tactical mind promised a deadly precision in combat.\nThe battle erupted in a cascade of clashing steel and elemental fury. Arden launched a series of rapid strikes toward Morgath, who countered with sweeping arcs of fire. Arden’s swift dodges saved him, yet his impetuous taunts distracted him long enough for a colliding charge from Grimgor to nearly knock him off balance. Overhead, Lady Seraphina circled protectively, unleashing bursts of divine light that not only healed minor wounds but also momentarily dazzled Morgath, forcing him to recoil from her radiance.\nRecognizing the existential threat posed by Morgath’s infernal blaze, an uneasy, temporary alliance formed between Arden and Lady Seraphina. Together, they lured Morgath toward the river, a strategic gambit exploiting his well-known susceptibility to water. As Morgath advanced with a sneering confidence, his slow, lumbering steps carried him dangerously close to the flowing, sacred water. In a fateful twist, the river’s spray doused his flames, leaving him sputtering and exposed. Enraged by the setback, Morgath tried to rally, unleashing a torrent of fire that collided spectacularly with Seraphina’s divine light in a dazzling, elemental explosion.\nSeizing the moment, Grimgor charged with a measured, thunderous roar, his battle-hardened tactics coming to the fore. His massive blow struck Morgath squarely, sending the infernal warrior reeling toward the river. Morgath’s flames faltered under the onslaught of water and raw force, and with one final, crushing strike from Grimgor, he was hurled into the churning current, his threat extinguished.\nNow the battlefield narrowed to a final showdown between the nimble Arden Swiftblade, the resolute Lady Seraphina, and the indomitable Grimgor. Arden’s relentless dashes and precise swordplay battered at Grimgor’s armored defenses, yet his overzealous attacks left him vulnerable to the giant’s calculated ripostes. In a climactic exchange, Grimgor feinted a retreat only to launch a devastating counterattack. Caught off guard by the measured ferocity of his opponent, Arden was struck down, his speed no longer enough to defy Grimgor’s inexorable might.\nLady Seraphina, determined to use her remaining divine power, created a radiant barrier that deflected Grimgor’s next heavy blow. But the effort drained her already limited magical reserves, leaving her weakened and forced to retreat from the blood-soaked arena. As the dust settled, with the echoes of clashing steel and extinguished flames still lingering in the air, only one figure stood unchallenged amidst the ruin: Grimgor the Unyielding. His unbreakable armor, relentless strength, and calculated tactics had seen him through the treacherous battle, making him the sole victor in this epic clash of legends.",
+    "winner": "Grimgor the Unyielding"
+}`,
       },
       {
         'role': 'user',

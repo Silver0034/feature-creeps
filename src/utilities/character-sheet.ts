@@ -83,20 +83,23 @@ ${weaknessesStr}`
 	}
 
 	toJSON(hideWins = true as boolean): string {
-		// Remove private fields.
-		if (hideWins) {
-			// Create a copy of the object.
-			const copy = { ...this } as { [key: string]: any };
+		// This approach prevents a recursive call to toJSON() because the json
+		// object copy isn't explicitly a CharacterSheet.
+		let json = {
+			name: this.name,
+			className: this.className,
+			level: this.level,
+			strengths: this.strengths,
+			weaknesses: this.weaknesses
+		} as any;
+		if(!hideWins) {
 			// Wins may bias the AI to have characters steamroll. Remove them.
-			delete copy.wins;
-			// Return the JSON string.
-			return JSON.stringify(copy);
+			json.wins = this.wins;
 		}
-		// Return the JSON string.
-		return JSON.stringify(this);
+		return JSON.stringify(json);
 	}
 
-	static fromJSON(json: any): CharacterSheet {
+	static fromJSON(json: string): CharacterSheet {
 		// TODO: Need to safe parse this too?
 		const parsedJson = JSON.parse(json);
 

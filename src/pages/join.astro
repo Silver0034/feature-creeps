@@ -3,35 +3,36 @@
 ---
 
 <script>
-	import { main } from "@utilities/game-logic-client";
-	await main();
-  </script>
-  
-  <p>Client</p>
-  <p>Game State: <span id="gameState"></span></p>
-  
-  <br />
-  
-  <div id="roomDiv" style="display:none;">
-	<label for="roomId" id="roomIdLabel">Room Code:</label>
-	<input type="text" id="roomId" size="10" />
-	<button id="submitRoomId">Submit</button>
-  </div>
-  
-  <br />
-  
-  <div id="nameDiv" style="display:none;">
-	<label for="nameInput">Name:</label>
-	<input type="text" id="nameInput" size="15" />
-	<button id="submitName">Submit</button>
-  </div>
-  
-  <br />
-  
-  <div id="abilityDiv" style="display:none;">
-	<label for="abilityInput">Ability:</label>
-	<input type="text" id="abilityInput" size="15" />
-	<button id="submitAbility">Submit</button>
-  </div>
-  
-  <!-- TODO: Add a list of error messages so players know what's going on. -->
+  import { main } from "@utilities/game-logic-client";
+  await main();
+</script>
+
+<p>Client</p>
+<p>Game State: <span id="gameState"></span></p>
+<p id="feedback" aria-live="assertive"></p>
+
+<br />
+
+<div id="roomDiv" style="display:none;">
+  <label for="roomId" id="roomIdLabel">Room Code:</label>
+  <input type="text" id="roomId" size="10" />
+  <button id="submitRoomId">Submit</button>
+</div>
+
+<br />
+
+<div id="nameDiv" style="display:none;">
+  <label for="nameInput">Name:</label>
+  <input type="text" id="nameInput" size="15" />
+  <button id="submitName">Submit</button>
+</div>
+
+<br />
+
+<div id="abilityDiv" style="display:none;">
+  <label for="abilityInput">Ability:</label>
+  <input type="text" id="abilityInput" size="15" />
+  <button id="submitAbility">Submit</button>
+</div>
+
+<!-- TODO: Add a list of error messages so players know what's going on. -->

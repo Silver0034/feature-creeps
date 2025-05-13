@@ -40,6 +40,7 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             }
             this.inProgress.add(peerId);
           });
+          // TODO: Ignore the ability if it exceeds the character's level too.
           console.log(`Got ability from ${peerId}: ${data.ability}`);
           const player = state.players.find(player => player.peerId === peerId);
           if (!player) {
@@ -105,15 +106,7 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           }
           // TODO: Display this in the GUI.
           console.log(`Got ability feedback from ${peerId}: ${data.feedback}`);
-
-          // Re-enable ability form in the GUI.
-          elements.client.abilityDiv.style.display = "inline";
-
-          // Make sure the user knows that they need to revise their answer.
-          // TODO: Make this optional.
-          navigator.vibrate(200);
-          // TODO: Play a notification tone too.
-          // TODO: Maybe even an obnoxious flash?
+          this.HandleInvalidAbility(data.feedback);
         } catch (error) {
           console.error(error);
         }
@@ -136,6 +129,24 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
         "isValid" in data &&
         typeof data.isValid === "boolean"
       );
+    }
+    public HandleInvalidAbility(feedback: string) {
+      if (state.role != Role.Client) {
+        throw new Error(`Triggered handling of an invalid ability on a non-client: ${feedback}`);
+      }
+      elements.client.feedback.innerText = `Invalid ability: ${feedback}`;
+
+      // Re-enable ability form in the GUI.
+      elements.client.abilityDiv.style.display = "inline";
+
+      // Make sure the user knows that they need to revise their answer.
+      // TODO: Make this optional?
+      navigator.vibrate(200);
+      // Play a notification tone.
+      const audio = new Audio("/sounds/bottleTap.flac");
+      audio.play().catch(error => {
+        console.error("Failed to play notification tone:", error);
+      });
     }
   };
 }

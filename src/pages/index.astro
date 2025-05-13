@@ -3,78 +3,91 @@
 ---
 
 <script>
-	import { main } from "@utilities/game-logic-host";
-  
-	await main();
-  </script>
-  
-  <p>Server</p>
-  <p>Game State: <span id="gameState"></span></p>
-  <p>Room Code: <span id="roomCode">------</span></p>
-  <div id="joinDiv" style="display:none;">
-	<p>Go to <a id="joinLink" target="_blank"></a> to join!</p>
-	<svg id="roomQr" width="256" height="256" style="display:none;"></svg>
+  import { main } from "@utilities/game-logic-host";
+
+  await main();
+</script>
+
+<p>Server</p>
+<p>Game State: <span id="gameState"></span></p>
+<p>Room Code: <span id="roomCode">------</span></p>
+<div id="joinDiv" style="display:none;">
+  <p>Go to <a id="joinLink" target="_blank"></a> to join!</p>
+  <svg id="roomQr" width="256" height="256" style="display:none;"></svg>
+</div>
+<br />
+<div id="Options" style="display:none;">
+  <p>Options Menu:</p>
+  <!-- TODO: Add a VRAM usage bar to the top of the screen. -->
+  <div id="vramUsage">
+    <div
+      id="vramBar"
+      style="flex: 1; height: 20px; background-color: #4CAF50; transition: width 0.3s ease; border-radius: 5px;"
+    >
+      <div
+        class="filled"
+        style="position: absolute; top: 0; left: 0; height: 100%; width: 0%; transition: width 0.3s ease, background-color 0.3s ease; border-radius: 5px;"
+      >
+      </div>
+    </div>
+    <span id="vramText">VRAM Usage: 0 GB</span>
   </div>
+  <!-- TODO: Add option to skip intro automatically. -->
+  <label for="numRounds">Rounds (1 or more):</label>
+  <input type="text" id="numRounds" size="10" />
   <br />
-  <div id="Options" style="display:none;">
-	<p>Options Menu:</p>
-	<!-- TODO: Add a VRAM usage bar to the top of the screen. -->
-	<!-- TODO: Add option to skip intro automatically. -->
-	<label for="numRounds">Rounds (1 or more):</label>
-	<input type="text" id="numRounds" size="10" />
-	<br />
-	<br />
-	<label for="inferenceEngine">LLM Engine:</label>
-	<select id="inferenceEngine">
-	  <option value="local">Local</option>
-	  <option value="api">API</option>
-	</select>
-	<br />
-	<label for="inferenceModel">LLM Model:</label>
-	<select id="inferenceModel">
-	  <option value="">Loading list...</option>
-	</select>
-	<br />
-	<label for="temperature">Temperature:</label>
-	<!-- TODO: Replace with a slider. -->
-	<input type="text" id="temperature" size="10" />
-	<br />
-	<label for="inferenceApiUrl">LLM API URL:</label>
-	<input type="text" id="inferenceApiUrl" size="20" />
-	<br />
-	<label for="inferenceApiKey">LLM API Key:</label>
-	<input type="text" id="inferenceApiKey" size="20" />
-	<br />
-	<br />
-	<label for="ttsType">TTS Engine:</label>
-	<select id="ttsType"></select>
-	<br />
-	<label for="ttsVoice">TTS Voice:</label>
-	<select id="ttsVoice">
-	  <option value="">Loading list...</option>
-	</select>
-	<br />
-	<button id="saveConfig">Save</button>
-  </div>
-  <div id="Init" style="display:none;">
-	<button id="startButton">Create Lobby</button>
-	<!-- Temporarily hidden, as options are not fully functional yet. -->
-	<button id="optionsButton" style="display:none;">Options</button>
-  </div>
-  <div id="Connect" style="display:none;">
-	<p>Wait for all players to join, then press "Start Game".</p>
-	<p>Players Joined: <span id="playerCount">0</span></p>
-	<button id="goButton">Start Game</button>
-	<!-- TODO: Countdown and cancel button, like Jackbox. -->
-  </div>
-  <div id="Intro" style="display:none;"></div>
-  <div id="RoundAbilities" style="display:none;"></div>
-  <div id="RoundBattle" style="display:none;"></div>
-  <div id="BattleRoyale" style="display:none;"></div>
-  <div id="Leaderboard" style="display:none;"></div>
-  <div id="End" style="display:none;"></div>
   <br />
-  <p id="story"></p>
-  <!-- TODO: Add a message system to notify of any oddities, errors, etc. -->
-  <!-- TODO: Add a statement to inform players why they are waiting. -->
-  
+  <label for="inferenceEngine">LLM Engine:</label>
+  <select id="inferenceEngine">
+    <option value="local">Local</option>
+    <option value="api">API</option>
+  </select>
+  <br />
+  <label for="inferenceModel">LLM Model:</label>
+  <select id="inferenceModel">
+    <option value="">Loading list...</option>
+  </select>
+  <br />
+  <label for="temperature">Temperature:</label>
+  <input type="range" id="temperature" min="0" max="2" step="0.1" />
+  <br />
+  <label for="inferenceApiUrl">LLM API URL:</label>
+  <input type="text" id="inferenceApiUrl" size="20" />
+  <br />
+  <label for="inferenceApiKey">LLM API Key:</label>
+  <input type="text" id="inferenceApiKey" size="20" />
+  <br />
+  <br />
+  <label for="ttsType">TTS Engine:</label>
+  <select id="ttsType"></select>
+  <br />
+  <label for="ttsVoice">TTS Voice:</label>
+  <select id="ttsVoice">
+    <option value="">Loading list...</option>
+  </select>
+  <br />
+  <button id="saveConfig">Save</button>
+</div>
+<div id="Init" style="display:none;">
+  <button id="startButton">Create Lobby</button>
+  <!-- Temporarily hidden, as options are not fully functional yet. -->
+  <button id="optionsButton" style="display:none;">Options</button>
+</div>
+<div id="Connect" style="display:none;">
+  <p>Wait for all players to join, then press "Start Game".</p>
+  <p>Players Joined: <span id="playerCount">0</span></p>
+  <button id="goButton">Start Game</button>
+  <!-- TODO: Countdown and cancel button, like Jackbox. -->
+</div>
+<div id="Intro" style="display:none;"></div>
+<div id="RoundAbilities" style="display:none;"></div>
+<div id="RoundBattle" style="display:none;"></div>
+<div id="BattleRoyale" style="display:none;"></div>
+<div id="Leaderboard" style="display:none;"></div>
+<div id="End" style="display:none;"></div>
+<br />
+<p id="enemy"></p>
+<p id="player"></p>
+<p id="story"></p>
+<!-- TODO: Add a message system to notify of any oddities, errors, etc. -->
+<!-- TODO: Add a statement to inform players why they are waiting. -->
