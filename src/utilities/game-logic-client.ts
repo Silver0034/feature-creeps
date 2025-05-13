@@ -189,7 +189,7 @@ export async function notify() {
   // TODO: Make this optional?
   navigator.vibrate(200);
   // Play a notification tone.
-  const audio = new Audio("/sounds/bottleTap.flac");
+  const audio = new Audio(`${import.meta.env.BASE_URL}sounds/bottleTap.flac`);
   audio.play().catch(error => {
     console.error("Failed to play notification tone:", error);
   });

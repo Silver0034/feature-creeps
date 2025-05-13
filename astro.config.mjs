@@ -9,11 +9,8 @@ import react from '@astrojs/react'
 // https://astro.build/config
 export default defineConfig({
 	output: 'static',
-
-	adapter: node({
-		mode: 'standalone'
-	}),
-
+	adapter: node({ mode: 'standalone' }),
+	integrations: [mdx(), react()],
 	server: {
 		// Cross-origin isolation headers enable multithreaded WASM.
 		headers: {
@@ -21,12 +18,5 @@ export default defineConfig({
 			'Cross-Origin-Embedder-Policy': 'require-corp',
 		},
 	},
-
-	vite: {
-		define: {
-			__SITE__: JSON.stringify('https://localhost:4321')
-		},
-	},
-
-	integrations: [mdx(), react()],
+	base: process.env.BASE_URL ?? '/', // fallback for local dev
 })
