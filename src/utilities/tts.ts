@@ -1,4 +1,4 @@
-// TODO: See if we can get a word-by-word highlight of the next being read in the UI.
+// NOTE: See if we can get a word-by-word highlight of the text being read in the UI.
 
 import * as vits from "@diffusionstudio/vits-web";
 import { KokoroTTS as kokoroTTS } from "kokoro-js";

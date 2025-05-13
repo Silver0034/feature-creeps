@@ -6,7 +6,7 @@ import { WebRTC } from "@utilities/web-rtc";
 
 // Announces that this peer is the game server.
 
-type ServerData = { secret: string };
+type ServerData = { secret: string, vipId: string };
 
 export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
@@ -26,7 +26,7 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
           }
           if (state.role != Role.Client) {
-            throw new Error(`Ignoring server info sent by ${peerId} to a ${Role[state.role]}: ${data.secret}`);
+            throw new Error(`Ignoring server info sent by ${peerId} to a ${Role[state.role]}`);
           }
           console.log(`${peerId} is the server: ${JSON.stringify(data)}`);
 
@@ -47,6 +47,8 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
 
           // Keep track of the server to know when it's the server sending messages.
           state.hostId = peerId;
+          // Keep track of the VIP.
+          state.vipId = data.vipId;
         } catch (error) {
           console.error(error);
         }
@@ -63,6 +65,12 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
         crypto.getRandomValues(buffer);
         const secret = Array.from(buffer).map(b => b.toString(16).padStart(2, "0")).join("");
 
+        // The first player to join becomes the VIP.
+        // TODO: Consider asynchronous calls that cause issues when more than one player is the "first".
+        if (!state.vipId) {
+          state.vipId = peerId;
+        }
+
         const player = state.players.find(player => player.peerId === peerId);
         if (!player) {
           state.players.push({
@@ -74,7 +82,7 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           player.secret = secret;
         }
 
-        this.sendServer({ secret: secret }, peerId);
+        this.sendServer({ secret: secret, vipId: state.vipId }, peerId);
       } else if (state.role = Role.Client) {
         // Track the players that join.
         const player = state.players.find(player => player.peerId === peerId);
@@ -92,7 +100,9 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
         typeof data === "object" &&
         data !== null &&
         "secret" in data &&
-        typeof data.secret === "string"
+        typeof data.secret === "string" &&
+        "vipId" in data &&
+        typeof data.vipId === "string"
       );
     }
   };

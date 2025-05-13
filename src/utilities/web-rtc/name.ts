@@ -1,10 +1,11 @@
 import * as AsyncLock from "async-lock";
 import { elements } from "@utilities/elements";
+import { notify } from "@utilities/game-logic-client";
 import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
 type NameData = { name: string };
-type NameFBData = { isValid: boolean, feedback: string };
+type NameFBData = { isValid: boolean, feedback: string, name: string };
 
 export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
@@ -35,8 +36,7 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
           if (!player) {
             throw Error(`Could not find player with peerId ${peerId}`);
           }
-          // Host-side, this is a data race.
-          // If we aren't careful, multiple users could get the same name.
+          // Use a lock to prevent multiple players from getting the same name.
           await this.nameLock.acquire("name-validation", async () => {
             const validationError = this.validateName(data.name);
             if (!validationError) {
@@ -49,8 +49,9 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
             }
             sendNameFB({
               isValid: !Boolean(validationError),
-              feedback: validationError ? validationError : ""
-            });
+              feedback: validationError ? validationError : "",
+              name: data.name
+            }, peerId);
           });
         } catch (error) {
           console.error(error);
@@ -71,6 +72,8 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
           }
           if (data.isValid) {
             console.log("Name accepted!");
+            // Add player name to the top of the screen.
+            elements.client.name.innerText = `Name: ${data.name}`;
             return;
           }
           console.log(`Got name feedback from ${peerId}: ${data.feedback}`);
@@ -95,7 +98,9 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
         "feedback" in data &&
         typeof data.feedback === "string" &&
         "isValid" in data &&
-        typeof data.isValid === "boolean"
+        typeof data.isValid === "boolean" &&
+        "name" in data &&
+        typeof data.name === "string"
       );
     }
     public validateName(name: string): string | null {
@@ -105,9 +110,9 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
       } else if (name.length > maxLength) {
         return `Name is too long (>${maxLength} characters).`;
       }
-      // TODO: We can do an initial client-side name duplication validation
-      // easily if sendName() is broadcast globally, since we can store them and
-      // find them here.
+      // NOTE: Client-side name duplication validation is impractical because
+      // the client has no view into who, if anyone, canonically "owns" any
+      // particular name. We must rely on the host to check this for us.
       if (state.players.some(player => player.sheet.name === name)) {
         return "Name already in use.";
       }
@@ -123,13 +128,7 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
       elements.client.nameDiv.style.display = "inline";
 
       // Make sure the user knows that they need to revise their name.
-      // TODO: Make this optional?
-      navigator.vibrate(200);
-      // Play a notification tone.
-      const audio = new Audio("/sounds/bottleTap.flac");
-      audio.play().catch(error => {
-        console.error("Failed to play notification tone:", error);
-      });
+      notify();
     }
   };
 }

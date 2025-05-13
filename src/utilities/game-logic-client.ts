@@ -1,5 +1,6 @@
 import { selfId } from "trystero/mqtt";
-import { elements } from "@utilities/elements";
+import { CharacterSheet } from "@utilities/character-sheet";
+import { elements, validateElements } from "@utilities/elements";
 import { state, GameState, Role } from "@utilities/state";
 
 import { WebRTC } from "@utilities/web-rtc";
@@ -17,17 +18,21 @@ let rtc: InstanceType<typeof WebRTCClient>;
 
 let queryStrings: Record<string, string | null>;
 
-function updateStateElement() {
+function updateStateElement(gameState?: GameState) {
+  if (gameState) {
+    state.gameState = gameState;
+  }
   elements.gameState.textContent = GameState[state.gameState];
 }
 
 export async function main(): Promise<void> {
   state.role = Role.Client;
+  validateElements();
   await init();
 }
 
 export async function init() {
-  updateStateElement();
+  updateStateElement(GameState.Init);
   queryStrings = new Proxy(Object.create(null), {
     get: (_, prop: string) => new URLSearchParams(window.location.search).get(prop) ?? null,
   }) as Record<string, string | null>;
@@ -35,7 +40,7 @@ export async function init() {
 }
 
 export async function connect() {
-  updateStateElement();
+  updateStateElement(GameState.Connect);
   let room = queryStrings.r;
 
   if (!room) {
@@ -68,17 +73,18 @@ export async function connect() {
   elements.client.nameDiv.style.display = "inline";
   function nameSender() {
     const input = elements.client.nameInput.value.trim();
-    if (input) {
-      const validationResponse = rtc.validateName(input);
-      elements.client.nameInput.value = "";
-      if (!validationResponse) {
-        rtc.sendName({ name: input }, state.hostId);
-        elements.client.feedback.innerText = "";
-        elements.client.nameDiv.style.display = "none";
-      } else {
-        console.warn(`Invalid name: ${validationResponse}`);
-        rtc.HandleInvalidName(validationResponse);
-      }
+    if (!input) {
+      return;
+    }
+    const validationResponse = rtc.validateName(input);
+    elements.client.nameInput.value = "";
+    if (!validationResponse) {
+      rtc.sendName({ name: input }, state.hostId);
+      elements.client.feedback.innerText = "";
+      elements.client.nameDiv.style.display = "none";
+    } else {
+      console.warn(`Invalid name: ${validationResponse}`);
+      rtc.HandleInvalidName(validationResponse);
     }
   }
   elements.client.submitName.addEventListener("click", () => {
@@ -111,12 +117,20 @@ export async function intro() {
 export async function roundAbilities() {
   updateStateElement();
   // Show current player sheet.
+  // TODO: Show on screen.
   console.log(state.players.find((player) => player.peerId == selfId)?.sheet.toString());
 
-  // TODO: Figure out why this triggers multiple times sometimes.
+  // Notify the player that it is time to enter an ability.
+  notify();
+
   function abilitySender() {
     const ability = elements.client.abilityInput.value.trim();
+
+    // Ignore empty ability submissions.
+    if (!ability || ability === "") { return; }
+
     rtc.sendAbility({ ability: ability }, state.hostId);
+
     elements.client.feedback.innerText = "";
     elements.client.abilityInput.value = "";
     elements.client.abilityDiv.style.display = "none";
@@ -171,4 +185,17 @@ export async function options() {
   // Maybe sound effects and vibration?
 }
 
-// TODO: Add player name to the top of the screen.
+export async function notify() {
+  // TODO: Make this optional?
+  navigator.vibrate(200);
+  // Play a notification tone.
+  const audio = new Audio("/sounds/bottleTap.flac");
+  audio.play().catch(error => {
+    console.error("Failed to play notification tone:", error);
+  });
+}
+
+export async function updateSheet(sheet: CharacterSheet) {
+  elements.client.sheet.innerText = sheet.toString();
+  elements.client.sheet.style.display = "inline";
+}

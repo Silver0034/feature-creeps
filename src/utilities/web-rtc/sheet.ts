@@ -1,7 +1,8 @@
 import { selfId } from "trystero/mqtt";
-import { WebRTC } from "@utilities/web-rtc";
-import { state, Role } from "@utilities/state";
 import { CharacterSheet } from "@utilities/character-sheet";
+import { updateSheet } from "@utilities/game-logic-client";
+import { state, Role } from "@utilities/state";
+import { WebRTC } from "@utilities/web-rtc";
 
 type SheetData = { sheet: string, peerId: string };
 
@@ -25,17 +26,22 @@ export function sheetMixin<TBase extends new (...args: any[]) => WebRTC>(Base: T
             throw new Error(`Ignoring character sheet sent by ${peerId} to a ${Role[state.role]}: ${data.sheet}`);
           }
           console.log(`Got sheet from ${peerId} for peer ${data.peerId}: ${data.sheet}`);
+          const sheet = CharacterSheet.fromJSON(data.sheet);
           // Update player sheet.
           const player = state.players.find(player => player.peerId === data.peerId);
           if (!player) {
             // TODO: No secret may be a problem here. We don't use the field for now though.
             state.players.push({
-              sheet: CharacterSheet.fromJSON(data.sheet),
+              sheet: sheet,
               secret: "",
               peerId: selfId
             });
           } else {
-            player.sheet = CharacterSheet.fromJSON(data.sheet);
+            player.sheet = sheet;
+          }
+          // Display your own sheet on screen.
+          if (data.peerId === selfId) {
+            updateSheet(sheet);
           }
         } catch (error) {
           console.error(error);

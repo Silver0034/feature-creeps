@@ -6,6 +6,7 @@ export let elements = {
   gameState: document.getElementById("gameState") as HTMLInputElement,
   host: {
     playerCount: document.getElementById("playerCount") as HTMLElement,
+    // TODO: Winner text.
     story: document.getElementById("story") as HTMLInputElement,
     player: document.getElementById("player") as HTMLInputElement,
     enemy: document.getElementById("enemy") as HTMLInputElement,
@@ -13,6 +14,7 @@ export let elements = {
     optionsButton: document.getElementById("optionsButton") as HTMLButtonElement,
     joinDiv: document.getElementById("joinDiv") as HTMLInputElement,
     joinLink: document.getElementById("joinLink") as HTMLAnchorElement,
+    copyLinkButton: document.getElementById("copyLinkButton") as HTMLButtonElement,
     roomQr: document.getElementById("roomQr") as HTMLInputElement, // TODO: Not reported by validate?
     roomCode: document.getElementById("roomCode") as HTMLInputElement,
     goButton: document.getElementById("goButton") as HTMLButtonElement,
@@ -29,6 +31,8 @@ export let elements = {
     }
   },
   client: {
+    name: document.getElementById("name") as HTMLElement,
+    sheet: document.getElementById("sheet") as HTMLElement,
     feedback: document.getElementById("feedback") as HTMLInputElement,
     nameDiv: document.getElementById("nameDiv") as HTMLInputElement,
     roomDiv: document.getElementById("roomDiv") as HTMLInputElement,
@@ -42,14 +46,13 @@ export let elements = {
   },
 }
 
-// TODO: Validate the existence of these fields based on what we expect.
-function validateElements() {
-  // if (state.role == Role.Host) {
-  validate(elements.host);
-  // }
-  // if (state.role == Role.Client) {
-  validate(elements.client);
-  // }
+export function validateElements() {
+  if (state.role == Role.Host) {
+    validate(elements.host);
+  }
+  if (state.role == Role.Client) {
+    validate(elements.client);
+  }
 }
 
 type DOMElement = HTMLElement | HTMLInputElement | HTMLButtonElement | HTMLSelectElement;
@@ -61,7 +64,7 @@ function validate(elements: { [key: string]: unknown }) {
   Object.values(elements).forEach((element) => {
     if (isDOMElement(element)) {
       // Now TypeScript knows that element is a DOMElement
-      console.log(`${element.id}`);
+      // console.log(`${element.id}`);
     } else if (typeof element === 'object' && element !== null) {
       // If the element is an object, recursively validate its properties
       validate(element as { [key: string]: unknown });
@@ -70,5 +73,3 @@ function validate(elements: { [key: string]: unknown }) {
     }
   });
 }
-
-validateElements();

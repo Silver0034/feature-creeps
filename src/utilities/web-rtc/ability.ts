@@ -1,5 +1,6 @@
 import * as AsyncLock from "async-lock";
 import { elements } from "@utilities/elements";
+import { notify } from "@utilities/game-logic-client";
 import { promises } from "@utilities/promises"
 import { validateAbility, balanceAbility, generateClass, combat } from "@utilities/prompts"
 import { GameState, Role, state } from "@utilities/state";
@@ -40,11 +41,14 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             }
             this.inProgress.add(peerId);
           });
-          // TODO: Ignore the ability if it exceeds the character's level too.
           console.log(`Got ability from ${peerId}: ${data.ability}`);
           const player = state.players.find(player => player.peerId === peerId);
           if (!player) {
             throw Error(`Could not find player with peerId ${peerId}`);
+          }
+          // Ignore the ability if it exceeds the character's level.
+          if (player.sheet.strengths.length > state.round) {
+            throw Error(`Ignoring player-provided ability from peerId ${peerId} that already has ${player.sheet.strengths.length} abilities in round ${state.round}: ${data.ability}`);
           }
           const [isValid, validation] = await validateAbility(player.sheet, data.ability);
           sendAbilityFB({
@@ -52,7 +56,7 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             feedback: validation ?
               validation :
               "This ability conflicts with your existing abilities."
-          });
+          }, peerId);
           // TODO: As soon as we know it's valid, we should be able to resolve
           // the player's promise. However, it is currently unsafe to do this
           // because that same promise is also ensuring all pre-combat LLM
@@ -100,13 +104,14 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           if (state.gameState != GameState.RoundAbilities) {
             throw new Error(`Ignoring ability feedback sent by ${peerId} while in the ${GameState[state.gameState]} state: ${data.feedback}`);
           }
-          if(data.isValid) {
+          if (data.isValid) {
             console.log("Ability accepted!");
+            elements.client.sheet.style.display = "none";
             return;
           }
           // TODO: Display this in the GUI.
           console.log(`Got ability feedback from ${peerId}: ${data.feedback}`);
-          this.HandleInvalidAbility(data.feedback);
+          this.handleInvalidAbility(data.feedback);
         } catch (error) {
           console.error(error);
         }
@@ -117,7 +122,8 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
         typeof data === "object" &&
         data !== null &&
         "ability" in data &&
-        typeof data.ability === "string"
+        typeof data.ability === "string" &&
+        data.ability.length > 0
       );
     }
     private isAbilityFBData(data: any): data is AbilityFBData {
@@ -130,7 +136,7 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
         typeof data.isValid === "boolean"
       );
     }
-    public HandleInvalidAbility(feedback: string) {
+    public handleInvalidAbility(feedback: string) {
       if (state.role != Role.Client) {
         throw new Error(`Triggered handling of an invalid ability on a non-client: ${feedback}`);
       }
@@ -140,13 +146,7 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
       elements.client.abilityDiv.style.display = "inline";
 
       // Make sure the user knows that they need to revise their answer.
-      // TODO: Make this optional?
-      navigator.vibrate(200);
-      // Play a notification tone.
-      const audio = new Audio("/sounds/bottleTap.flac");
-      audio.play().catch(error => {
-        console.error("Failed to play notification tone:", error);
-      });
+      notify();
     }
   };
 }

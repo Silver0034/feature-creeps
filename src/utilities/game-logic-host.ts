@@ -1,6 +1,7 @@
 import QRCode from "qrcode-svg";
 import { selfId } from "trystero/mqtt";
-import { elements } from "@utilities/elements";
+import type { CharacterSheet } from "@utilities/character-sheet";
+import { elements, validateElements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
 import { promises } from "@utilities/promises"
 import { generateEnemy, genBattleRoyale } from "@utilities/prompts";
@@ -14,7 +15,6 @@ import { nameMixin } from "@utilities/web-rtc/name";
 import { serverMixin } from "@utilities/web-rtc/server";
 import { sheetMixin } from "@utilities/web-rtc/sheet";
 import { updateMixin } from "@utilities/web-rtc/update";
-import type { CharacterSheet } from "./character-sheet";
 
 // TEMP: Specify some settings so we don't have to configure each time.
 state.options.numRounds = 3;
@@ -54,6 +54,8 @@ export async function main(): Promise<void> {
   state.role = Role.Host;
   state.hostId = selfId;
 
+  validateElements();
+
   // TODO: If we have a game in progress, restore to the appropriate game state. Ensure clients reset to that state as well. The current round must be reset because we never store battle outputs in the state, just the character sheets. We will also need to announce our new peerId to the swarm.
   // If we unwind from all called functions, go back to game start every time.
   await runStateLogic(GameState.Init);
@@ -71,7 +73,6 @@ export async function runStateLogic(newState?: GameState) {
   elements.gameState.textContent = `${GameState[state.gameState]}`;
 
   // Update the UI.
-  // TODO: Use the content views instead.
   for (const key in GameState) {
     if (!isNaN(Number(key))) { continue; }
     const gameState = GameState[key as keyof typeof GameState];
@@ -133,6 +134,21 @@ async function init() {
   elements.host.optionsButton.addEventListener("click", async () => {
     await runStateLogic(GameState.Options);
   });
+  elements.host.copyLinkButton?.addEventListener("click", () => {
+    const url = elements.host.joinLink.href;
+    if (url) {
+      navigator.clipboard.writeText(url)
+        .then(() => {
+          elements.host.copyLinkButton.textContent = "Copied!";
+          setTimeout(() => {
+            elements.host.copyLinkButton.textContent = "Copy Link";
+          }, 2000);
+        })
+        .catch(err => {
+          console.error("Failed to copy: ", err);
+        });
+    }
+  });
 }
 
 async function connect() {
@@ -159,21 +175,27 @@ async function connect() {
     elements.host.roomQr.style.display = "block";
   }
 
-  // TODO: Request full screen on game start.
+  // Request full screen on game start.
+  // TODO: Make this optional.
+  document.documentElement.requestFullscreen();
 
-  // Generate a room code.
-  // TODO: Make sure it's not already in use.
-  state.room.roomId = generateRoomCode();
+  // Keep generating room codes until we find one that is unused.
+  do {
+    // Generate a room code.
+    state.room.roomId = generateRoomCode();
+    // Connect to the room.
+    rtc = new WebRTCServer(state.room.roomId);
+    // TODO: Develop a concise piece of logic to check for people already in the
+    // room. For now, assume that the randomizer is sufficiently unlikely to
+    // generate a collision.
+  } while (false);
   elements.host.roomCode.textContent = state.room.roomId.toUpperCase();
-  // TODO: Add copy link button next to join link.
   const joinLink = `${location.href}join/?r=${state.room.roomId}`;
   elements.host.joinLink.innerHTML = joinLink;
   elements.host.joinLink.href = joinLink;
   makeQr(joinLink);
   elements.host.joinDiv.style.display = "block";
   console.log(state.room.roomId.toUpperCase());
-  // Connect to the room.
-  rtc = new WebRTCServer(state.room.roomId);
 
   async function generateEnemies(): Promise<void> {
     // Pre-generate our enemies.
@@ -270,7 +292,9 @@ async function roundBattle() {
     elements.host.story.innerText = description;
     await longSpeak(description);
     winner.wins += 1;
-    console.log(`${winner.name} wins!`);
+    const winText = `${winner.name} wins!`;
+    console.log(winText);
+    await longSpeak(winText);
   }
 
   // TODO: Let players vote on player-chosen ability (👍 or 👎).
@@ -302,8 +326,10 @@ async function battleRoyale() {
   elements.host.story.innerText = description;
   await longSpeak(description);
   if (!winner) throw Error("No winner was chosen by the model.");
-  console.log(`${winner.name} wins!`);
   winner.wins += 1;
+  const winText = `${winner.name} wins!`;
+  console.log(winText);
+  await longSpeak(winText);
   await runStateLogic(GameState.Leaderboard);
 }
 
