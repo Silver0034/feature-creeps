@@ -111,6 +111,7 @@ interface KokoroTTSVoice {
 // Implementation for Kokoro TTS
 export class KokoroTTS implements TTS {
   protected tts?: kokoroTTS;
+  private internalName = "af_heart";
   private audio?: HTMLAudioElement;
   async initialize(options: Parameters<typeof kokoroTTS.from_pretrained>[1] = { dtype: "fp32", device: "webgpu" }) {
     if (this.tts) { return; }
@@ -141,9 +142,13 @@ export class KokoroTTS implements TTS {
     console.log(
       `Kokoro: Selected model ${modelName}, internally identified as ${selectedModel}`
     );
-    // TODO: Handle this mismatch between internal and external model names. This breaks my options menu.
-    state.options.tts.voice = selectedModel;
-    return selectedModel ? true : false;
+    if (selectedModel) {
+      state.options.tts.voice = modelName;
+      this.internalName = selectedModel;
+      return true;
+    } else {
+      return false;
+    }
   }
   async downloadModel(_: string): Promise<boolean> {
     console.log("Kokoro TTS does not require per-voice downloads.");
@@ -157,7 +162,7 @@ export class KokoroTTS implements TTS {
       return Promise.all([
         this.tts.generate(text, {
           // @ts-ignore
-          voice: state.options.tts.voice || "af_heart",
+          voice: this.internalName,
         }),
         Promise.resolve(text)
       ]);
@@ -193,7 +198,7 @@ export class KokoroTTS implements TTS {
       }
       const generated = await this.tts.generate(text, {
         // @ts-ignore
-        voice: state.options.tts.voice || "af_heart",
+        voice: this.internalName,
       });
       let audio = new Audio();
       audio.src = URL.createObjectURL(generated.toBlob());
@@ -365,7 +370,8 @@ export async function initTts(options: {
   if (voice) { state.options.tts.voice = voice; }
   switch (state.options.tts.type) {
     case "kokoro":
-      // Best quality model. Runs on the GPU via WebGPU. Consumes about 700MB of VRAM.
+      // Best quality model. Runs on the GPU via WebGPU.
+      // Consumes about 800MB of VRAM.
       tts = new KokoroTTS();
       await (tts as KokoroTTS).initialize();
       break;
@@ -379,7 +385,8 @@ export async function initTts(options: {
       tts = new VitsWebTTS();
       break;
     case "system":
-      // Low quality model. Runs using system TTS, which is available on nearly everything and super cheap to run.
+      // Low quality model. Runs using system TTS, which is available on nearly
+      // everything and is super cheap to run.
       tts = new SystemTTS();
       break;
     case "none":

@@ -47,16 +47,16 @@ export async function connect() {
     // Provide a room code.
     elements.client.roomDiv.style.display = "inline";
     await new Promise<void>((resolve) => {
-      elements.client.submitRoomId.addEventListener("click", () => {
+      elements.client.submitRoomId.onclick = () => {
         room = elements.client.roomId.value.trim();
         resolve();
-      });
-      elements.client.roomId.addEventListener("keypress", (event) => {
+      };
+      elements.client.roomId.onkeydown = (event) => {
         if (event.key === "Enter") {
           room = elements.client.roomId.value.trim();
           resolve();
         }
-      });
+      };
     });
   }
 
@@ -87,14 +87,14 @@ export async function connect() {
       rtc.HandleInvalidName(validationResponse);
     }
   }
-  elements.client.submitName.addEventListener("click", () => {
+  elements.client.submitName.onclick = () => {
     nameSender();
-  });
-  elements.client.nameInput.addEventListener("keypress", (event) => {
+  };
+  elements.client.nameInput.onkeydown = (event) => {
     if (event.key === "Enter") {
       nameSender();
     }
-  });
+  };
 
   // TODO: Provide a selection of character portraits and sounds.
 
@@ -139,14 +139,14 @@ export async function roundAbilities() {
   // LEVEL UP!
   // Please enter a new ability for your character:
   elements.client.abilityDiv.style.display = "inline";
-  elements.client.submitAbility.addEventListener("click", () => {
+  elements.client.submitAbility.onclick = () => {
     abilitySender();
-  });
-  elements.client.abilityInput.addEventListener("keypress", (event) => {
+  };
+  elements.client.abilityInput.onkeydown = (event) => {
     if (event.key === "Enter") {
       abilitySender();
     }
-  });
+  };
 
   // NOTE: May getAbilityFB() if this ability doesn't pass LLM validation.
   // May have to send one in multiple times.

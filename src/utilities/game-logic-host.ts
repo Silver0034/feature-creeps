@@ -5,7 +5,7 @@ import { elements, validateElements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
 import { promises } from "@utilities/promises"
 import { generateEnemy, genBattleRoyale } from "@utilities/prompts";
-import { state, GameState, Role } from "@utilities/state";
+import { state, GameState, Role, saveGame, loadGame } from "@utilities/state";
 import { tts, initTts, longSpeak } from "@utilities/tts";
 
 import { WebRTC } from "@utilities/web-rtc";
@@ -15,16 +15,6 @@ import { nameMixin } from "@utilities/web-rtc/name";
 import { serverMixin } from "@utilities/web-rtc/server";
 import { sheetMixin } from "@utilities/web-rtc/sheet";
 import { updateMixin } from "@utilities/web-rtc/update";
-
-// TEMP: Specify some settings so we don't have to configure each time.
-state.options.numRounds = 3;
-state.options.tts.type = "kokoro";
-state.options.tts.voice = "Heart";
-state.options.inference.engine = "local";
-// state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
-// state.options.inference.modelName = "gemma-2-9b-it-q4f16_1-MLC";
-state.options.inference.modelName = "Qwen3-8B-q4f16_1-MLC";
-state.options.playIntro = false;
 
 const WebRTCServer = abilityMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC))))));
 let rtc: InstanceType<typeof WebRTCServer>;
@@ -45,12 +35,15 @@ const VALID_OPTIONS = {
   ] as [string, string][],
 };
 
-// TODO: analyze all places where we log to console.
+// TODO: Analyze all places where we log to console.
 // Be sure to put most of it on-screen for players to see.
 
 // TODO: Music system. Layered instruments.
 
 export async function main(): Promise<void> {
+  // Load settings from localStorage.
+  loadGame();
+
   state.role = Role.Host;
   state.hostId = selfId;
 
@@ -120,21 +113,25 @@ export async function runStateLogic(newState?: GameState) {
 }
 
 async function init() {
-  elements.host.startButton.addEventListener("click", async () => {
+  elements.host.startButton.onclick = async () => {
     // Make sure the inference engines are ready to go.
     // TODO: Sometimes these fail to initialize on first use. Figure out why,
     // and, failing that, figure out how to warn the host.
     // TODO: Provide loading progress for these. Especially because new models
     // can take a long time to download on first use.
-    promises.tts = initTts({ reload: false });
-    promises.llm = initLlm({ reload: false });
+    if (!promises.tts) {
+      promises.tts = initTts({ reload: false });
+    }
+    if (!promises.llm) {
+      promises.llm = initLlm({ reload: false });
+    }
 
     await runStateLogic(GameState.Connect);
-  });
-  elements.host.optionsButton.addEventListener("click", async () => {
+  };
+  elements.host.optionsButton.onclick = async () => {
     await runStateLogic(GameState.Options);
-  });
-  elements.host.copyLinkButton?.addEventListener("click", () => {
+  };
+  elements.host.copyLinkButton.onclick = () => {
     const url = elements.host.joinLink.href;
     if (url) {
       navigator.clipboard.writeText(url)
@@ -148,7 +145,7 @@ async function init() {
           console.error("Failed to copy: ", err);
         });
     }
-  });
+  };
 }
 
 async function connect() {
@@ -176,8 +173,9 @@ async function connect() {
   }
 
   // Request full screen on game start.
-  // TODO: Make this optional.
-  document.documentElement.requestFullscreen();
+  if (state.options.autoFullscreen) {
+    document.documentElement.requestFullscreen();
+  }
 
   // Keep generating room codes until we find one that is unused.
   do {
@@ -189,13 +187,13 @@ async function connect() {
     // room. For now, assume that the randomizer is sufficiently unlikely to
     // generate a collision.
   } while (false);
-  elements.host.roomCode.textContent = state.room.roomId.toUpperCase();
+  elements.host.roomCode.textContent = state.room.roomId;
   const joinLink = `${location.href}join/?r=${state.room.roomId}`;
   elements.host.joinLink.innerHTML = joinLink;
   elements.host.joinLink.href = joinLink;
   makeQr(joinLink);
   elements.host.joinDiv.style.display = "block";
-  console.log(state.room.roomId.toUpperCase());
+  console.log(state.room.roomId);
 
   async function generateEnemies(): Promise<void> {
     // Pre-generate our enemies.
@@ -213,11 +211,11 @@ async function connect() {
   // Names are provided in nameMixin.
 
   // Wait for start button to be hit.
-  elements.host.goButton.addEventListener("click", async () => {
+  elements.host.goButton.onclick = async () => {
     // Toss any incomplete character sheets.
     state.players = state.players.filter(player => player.sheet.name !== "Unknown");
     await runStateLogic(GameState.Intro);
-  });
+  };
 }
 
 async function intro() {
@@ -230,13 +228,13 @@ async function intro() {
 
   await promises.tts;
   let explainString = "";
-  if (state.options.playIntro) {
+  if (state.options.skipIntro) {
+    explainString = "Let the games begin!";
+  } else {
     // Explain game rules.
     explainString = "Feature Creeps is a roleplaying adventure game where players level up, add new abilities to their character sheets, and face monsters. Every round, a randomly generated Creep will appear. You'll have the chance to read their character sheet before deciding how to improve your character to face them in combat. When you add a new strength, you can write down literally anything you want, so long as it isn't in conflict with your existing abilities. Let your imagination run wild! But don't be too greedy: with every strength you add to your character, an equally harmful weakness gets added too. Keep in mind the final bonus round, where players will fight each other in a climatic battle royale. Can you survive, or will feature creep be your own undoing?";
     // Don't play the intro multiple times in the same session.
-    state.options.playIntro = false;
-  } else {
-    explainString = "Let the games begin!";
+    state.options.skipIntro = true;
   }
   elements.host.story.innerText = explainString;
   await longSpeak(explainString);
@@ -335,15 +333,18 @@ async function battleRoyale() {
 
 async function leaderboard() {
   // TODO: Show scoreboard on screen.
-  function printScoreboard(): void {
+  function getScoreboardText(): string {
+    let scoreboardText: string = "Leaderboard:";
     const leaderboard = state.players.map((player) => player.sheet).slice().sort((a, b) => b.wins - a.wins);
-    console.log("Leaderboard:");
     for (const card of leaderboard) {
-      console.log(`${card.name}\t${card.wins} wins`);
+      scoreboardText += `\n${card.name}:\t${card.wins} wins`;
     }
+    return scoreboardText;
   }
   // Display the winners.
-  printScoreboard();
+  const scoreboardText = getScoreboardText();
+  console.log(scoreboardText);
+  elements.host.leaderboardText.innerText = scoreboardText;
   // Wait before transitioning to the end state.
   await new Promise(resolve => setTimeout(resolve, 10000));
   await runStateLogic(GameState.End);
@@ -371,11 +372,6 @@ async function end() {
 async function options() {
   let models: any[] = [];
 
-  function populateDropdown(element: HTMLSelectElement, options: string[], defaultValue: string = "") {
-    const optionPairs: [string, string][] = options.map((option) => [option, option]);
-    populateDropdownPairs(element, optionPairs, defaultValue);
-  }
-
   function populateDropdownPairs(element: HTMLSelectElement, options: [string, string][], defaultValue: string = "") {
     element.innerHTML = "";
     options.forEach(option => {
@@ -397,8 +393,7 @@ async function options() {
     state.options.inference.engine = elements.host.options.inferenceEngine.value;
 
     if (state.options.inference.engine === "local") {
-      elements.host.options.inferenceApiUrl.style.display = "none";
-      elements.host.options.inferenceApiKey.style.display = "none";
+      elements.host.options.inferenceApiRow.style.display = "none";
 
       models = await listModels();
 
@@ -415,11 +410,10 @@ async function options() {
 
       populateDropdownPairs(elements.host.options.inferenceModel, modelStrings, state.options.inference.modelName || "Choose an LLM engine first.");
 
-      elements.host.options.inferenceModel.style.display = "block";
+      elements.host.options.inferenceModelRow.style.display = "block";
     } else if (state.options.inference.engine === "API") {
-      elements.host.options.inferenceModel.style.display = "none";
-      elements.host.options.inferenceApiUrl.style.display = "block";
-      elements.host.options.inferenceApiKey.style.display = "block";
+      elements.host.options.inferenceModelRow.style.display = "none";
+      elements.host.options.inferenceApiRow.style.display = "block";
     }
   }
 
@@ -438,7 +432,7 @@ async function options() {
 
     await initTts({
       type: state.options.tts.type,
-      reload: false
+      reload: true
     });
 
     const ttsVoiceOptions = await tts?.listModels();
@@ -476,12 +470,13 @@ async function options() {
       totalVram += ttsVramGB;
     }
 
+    // TODO: Violates rules that all elements are stored in elements.ts.
     const bar = document.getElementById('vramBar');
     const text = document.getElementById('vramText');
 
     if (bar && text) {
       // A "max VRAM", which we cannot actually know due to WebGPU security.
-      const maxVram = 32;
+      const maxVram = 8; // 65% of Steam players have at least this much VRAM.
       const percentage = (totalVram / maxVram) * 100;
       bar.style.width = `${Math.min(percentage, 100)}%`;
       text.textContent = `VRAM Usage: ${totalVram.toFixed(1)} GB`;
@@ -489,19 +484,28 @@ async function options() {
   }
 
   // Load current state.
+
+  elements.host.options.skipIntro.checked = state.options.skipIntro;
+  elements.host.options.autoFullscreen.checked = state.options.autoFullscreen;
   elements.host.options.numRounds.value = state.options.numRounds.toString();
+
   populateDropdownPairs(elements.host.options.inferenceEngine, VALID_OPTIONS.inferenceEngine, state.options.inference.engine || "Choose an LLM engine first.");
   await updateLlmLists();
   elements.host.options.inferenceModel.value = state.options.inference.modelName || "Choose an LLM engine first.";
+
   elements.host.options.temperature.value = state.options.inference.temperature.toString();
+  // TODO: Figure out why this does nothing.
+  elements.host.options.tempValue.textContent = state.options.inference.temperature.toString();
   elements.host.options.inferenceApiUrl.value = state.options.inference.apiURL || "";
   elements.host.options.inferenceApiKey.value = state.options.inference.apiKey || "";
+
   populateDropdownPairs(elements.host.options.ttsType, VALID_OPTIONS.ttsType, state.options.tts.type || "Choose a TTS engine first.");
   await updateTtsLists();
   elements.host.options.ttsVoice.value = state.options.tts.voice || "Choose a TTS engine first.";
+
   updateVramBar();
 
-  elements.host.options.inferenceEngine.addEventListener("change", async () => {
+  elements.host.options.inferenceEngine.onchange = async () => {
     const selectedValue = elements.host.options.inferenceEngine.value;
     if (VALID_OPTIONS.inferenceEngine
       .map(([value, _]) => value)
@@ -510,12 +514,12 @@ async function options() {
       updateVramBar();
       await updateLlmLists();
     }
-  });
+  };
 
   // TODO: Add an event listener for changing the LLM model.
   // Update VRAM bar when you do.
 
-  elements.host.options.ttsType.addEventListener("change", async () => {
+  elements.host.options.ttsType.onchange = async () => {
     const selectedValue = elements.host.options.ttsType.value;
     if (VALID_OPTIONS.ttsType
       .map(([value, _]) => value)
@@ -524,13 +528,15 @@ async function options() {
       updateVramBar();
       await updateTtsLists();
     }
-  });
+  };
 
   // TODO: Add an event listener for changing the TTS model.
   // Update VRAM bar when you do.
 
-  elements.host.options.saveConfig.addEventListener("click", async () => {
+  elements.host.options.saveConfig.onclick = async () => {
     // Save updated state.
+    state.options.skipIntro = elements.host.options.skipIntro.checked;
+    state.options.autoFullscreen = elements.host.options.autoFullscreen.checked;
     const parsedRounds = parseInt(elements.host.options.numRounds.value);
     if (parsedRounds >= VALID_OPTIONS.minRounds) {
       state.options.numRounds = parsedRounds;
@@ -558,8 +564,10 @@ async function options() {
     }
 
     console.log(state);
+    // Save settings to localStorage.
+    saveGame();
 
     // Run game state logic after saving.
     await runStateLogic(GameState.Init);
-  });
+  };
 }

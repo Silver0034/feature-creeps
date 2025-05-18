@@ -18,11 +18,18 @@ export let elements = {
     roomQr: document.getElementById("roomQr") as HTMLInputElement, // TODO: Not reported by validate?
     roomCode: document.getElementById("roomCode") as HTMLInputElement,
     goButton: document.getElementById("goButton") as HTMLButtonElement,
+    leaderboardText: document.getElementById("leaderboardText") as HTMLElement,
+    loadStatus: document.getElementById("loadStatus") as HTMLElement,
     options: {
+      skipIntro: document.getElementById("skipIntro") as HTMLInputElement,
+      autoFullscreen: document.getElementById("autoFullscreen") as HTMLInputElement,
       numRounds: document.getElementById("numRounds") as HTMLInputElement,
       inferenceEngine: document.getElementById("inferenceEngine") as HTMLSelectElement,
+      inferenceModelRow: document.getElementById("inferenceModelRow") as HTMLSelectElement,
       inferenceModel: document.getElementById("inferenceModel") as HTMLSelectElement,
       temperature: document.getElementById("temperature") as HTMLInputElement,
+      tempValue: document.getElementById("tempValue") as HTMLElement,
+      inferenceApiRow: document.getElementById("inferenceApiRow") as HTMLInputElement,
       inferenceApiUrl: document.getElementById("inferenceApiUrl") as HTMLInputElement,
       inferenceApiKey: document.getElementById("inferenceApiKey") as HTMLInputElement,
       ttsType: document.getElementById("ttsType") as HTMLSelectElement,

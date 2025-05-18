@@ -7,6 +7,7 @@
 import { CharacterSheet } from '@utilities/character-sheet';
 import { initTts } from '@utilities/tts';
 import { initLlm } from '@utilities/openai';
+import { promises } from "@utilities/promises"
 
 export enum GameState {
   Options = 1,
@@ -47,7 +48,8 @@ interface Room {
 }
 
 interface OptionsConfig {
-  playIntro: boolean;
+  skipIntro: boolean;
+  autoFullscreen: boolean;
   numRounds: number;
   inference: InferenceConfig;
   tts: TTSConfig;
@@ -73,6 +75,7 @@ export interface PlayerData {
   peerId: string
 }
 
+// Reasonable defaults are set here as needed.
 export let state: State = {
   gameState: GameState.Init as GameState,
   room: {
@@ -85,18 +88,19 @@ export let state: State = {
   vipId: undefined,
   role: Role.Unset as Role,
   options: {
-    playIntro: true,
+    skipIntro: false,
+    autoFullscreen: true,
     numRounds: 3 as number,
     inference: {
-      engine: undefined,
-      modelName: undefined,
+      engine: "local",
+      modelName: "Qwen3-8B-q4f16_1-MLC",
       temperature: 0.7, // 0.7 is OpenAI default.
       apiURL: undefined,
       apiKey: "sk-no-key-required" as string
     } as InferenceConfig,
     tts: {
-      type: "none" as string,
-      voice: undefined,
+      type: "kokoro" as string,
+      voice: "Heart",
     },
   } as OptionsConfig,
   round: 0 as number,
@@ -106,7 +110,9 @@ export let state: State = {
 
 export function saveGame(): void {
   console.log('Saving game.')
-  localStorage.setItem('gameSave', JSON.stringify(state))
+  // TODO: At some point, support resuming an existing game.
+  // In the interim, just use this to save and restore options.
+  localStorage.setItem('gameSave', JSON.stringify(state.options))
   console.log('Saved!')
 }
 
@@ -117,19 +123,20 @@ export async function loadGame(): Promise<boolean> {
       console.log('No existing save found. Starting a new game.');
       return false;
     }
-    state = JSON.parse(savedData);
+    state.options = JSON.parse(savedData);
     // TODO: If we include connection info in the game state,
     // then we may need clear them and redo the connection process.
     console.log('Game loaded successfully from local storage.');
 
-    // TODO: Consider relocating this to a set of settings changing functions.
-    console.log('Restoring selected models...');
-    if (state.options.inference.engine) {
-      await initLlm({});
-    }
-    if (state.options.tts.type) {
-      await initTts({});
-    }
+    // TODO: Disabled, at least for now.
+    // It is dangerous if the saved settings are unreasonable for the machine.
+    // console.log('Restoring selected models...');
+    // if (state.options.tts.type) {
+    //   promises.tts = initTts({});
+    // }
+    // if (state.options.inference.engine) {
+    //   promises.llm = initLlm({});
+    // }
 
     return true;
   } catch (error: any) {
@@ -141,16 +148,3 @@ export async function loadGame(): Promise<boolean> {
 export function wipeGame(): void {
   localStorage.removeItem('gameSave');
 }
-
-// DEBUG: Set temporary default values here.
-// state.options.inference.engine = "API";
-// state.options.inference.apiURL = "http://192.168.0.12:8080/v1";
-// state.options.inference.engine = "local";
-// Small, modern Llama.
-// state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f16_1-MLC";
-// Probably the largest supported local model. Needs 31.2GB of VRAM.
-// state.options.inference.modelName = "Llama-3.1-70B-Instruct-q3f16_1-MLC";
-// This model occasionally spouts garbage symbols. It would likely benefit from a low temperature.
-// state.options.inference.modelName = "Phi-3.5-mini-instruct-q4f16_1-MLC";
-// For older GPUs.
-// state.options.inference.modelName = "Llama-3.2-3B-Instruct-q4f32_1-MLC";

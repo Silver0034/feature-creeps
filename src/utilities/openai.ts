@@ -1,3 +1,4 @@
+import { elements } from "@utilities/elements";
 import { state } from "@utilities/state";
 import OpenAI from 'openai';
 import * as webllm from "@mlc-ai/web-llm";
@@ -85,6 +86,7 @@ export async function initLlm(options: {
       case "local": {
         const initProgressCallback = (report: webllm.InitProgressReport) => {
           console.log(report);
+          elements.host.loadStatus.innerText = `LLM Status: ${report.text}`;
         };
         client = await webllm.CreateWebWorkerMLCEngine(
           new Worker(new URL("./llm-worker.ts", import.meta.url), { type: "module" }),
