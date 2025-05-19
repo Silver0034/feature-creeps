@@ -272,8 +272,8 @@ async function roundBattle() {
   // Play out each battle.
   for (const promise of promises.battles) {
     const [winner, description, c1, c2] = await promise;
-    elements.host.player.innerText = c1.toString();
     elements.host.enemy.innerText = c2.toString();
+    elements.host.player.innerText = c1.toString();
     console.log(`${c1.name} vs ${c2.name}`);
     console.log(c1.toString());
     console.log(c2.toString());
@@ -283,8 +283,12 @@ async function roundBattle() {
     winner.wins += 1;
     const winText = `${winner.name} wins!`;
     console.log(winText);
-    // TODO: Show on screen.
+    elements.host.winner.innerText = winText;
+    elements.host.winner.style.display = "block";
     await longSpeak(winText);
+    // Display the winner for a moment longer.
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    elements.host.winner.style.display = "none";
   }
 
   // TODO: Let players vote on player-chosen ability (👍 or 👎).
@@ -313,6 +317,11 @@ async function battleRoyale() {
   const result = await promises.battleRoyale;
   if (!result) { throw Error("Battle royale returned nothing."); }
   const [winner, description] = result;
+
+  // Clear out the prior character sheets.
+  elements.host.player.style.display = "none";
+  elements.host.enemy.style.display = "none";
+
   elements.host.story.innerText = description;
   await longSpeak(description);
   if (!winner) throw Error("No winner was chosen by the model.");

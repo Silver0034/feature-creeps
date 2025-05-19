@@ -4,10 +4,10 @@ export let elements = {
   gameState: document.getElementById("gameState") as HTMLInputElement,
   host: {
     playerCount: document.getElementById("playerCount") as HTMLElement,
-    // TODO: Winner text.
-    story: document.getElementById("story") as HTMLInputElement,
-    player: document.getElementById("player") as HTMLInputElement,
     enemy: document.getElementById("enemy") as HTMLInputElement,
+    player: document.getElementById("player") as HTMLInputElement,
+    story: document.getElementById("story") as HTMLInputElement,
+    winner: document.getElementById("winner") as HTMLInputElement,
     startButton: document.getElementById("startButton") as HTMLButtonElement,
     optionsButton: document.getElementById("optionsButton") as HTMLButtonElement,
     joinDiv: document.getElementById("joinDiv") as HTMLInputElement,
