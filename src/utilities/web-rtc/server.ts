@@ -1,3 +1,4 @@
+import * as AsyncLock from "async-lock";
 import { selfId } from "trystero/mqtt";
 import { CharacterSheet } from "@utilities/character-sheet";
 import { elements } from "@utilities/elements";
@@ -10,6 +11,7 @@ type ServerData = { secret: string, vipId: string };
 
 export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
+    private vipLock = new AsyncLock.default();
     public sendServer!: (data: ServerData, peerId?: string) => void;
     constructor(...args: any[]) {
       super(...args);
@@ -66,10 +68,15 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
         const secret = Array.from(buffer).map(b => b.toString(16).padStart(2, "0")).join("");
 
         // The first player to join becomes the VIP.
-        // TODO: Consider asynchronous calls that cause issues when more than one player is the "first".
-        if (!state.vipId) {
-          state.vipId = peerId;
-        }
+        // TODO: This may be the first person to join, but this player may not
+        // provide a name in time and will then not be in the game. Consider
+        // this carefully.
+        this.vipLock.acquire(peerId, async () => {
+          if (!state.vipId) {
+            state.vipId = peerId;
+            console.log(`${state.vipId} has been assigned as the VIP.`);
+          }
+        });
 
         const player = state.players.find(player => player.peerId === peerId);
         if (!player) {
@@ -82,7 +89,7 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           player.secret = secret;
         }
 
-        this.sendServer({ secret: secret, vipId: state.vipId }, peerId);
+        this.sendServer({ secret: secret, vipId: state.vipId! }, peerId);
       } else if (state.role = Role.Client) {
         // Track the players that join.
         const player = state.players.find(player => player.peerId === peerId);

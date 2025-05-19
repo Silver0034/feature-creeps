@@ -84,9 +84,19 @@ export async function initLlm(options: {
   try {
     switch (state.options.inference.engine) {
       case "local": {
+        const taskElement = document.createElement('p');
         const initProgressCallback = (report: webllm.InitProgressReport) => {
           console.log(report);
-          elements.host.loadStatus.innerText = `LLM Status: ${report.text}`;
+          taskElement.textContent = `LLM Status: ${report.text}`;
+          elements.host.loadStatus.appendChild(taskElement);
+          if (report.progress == 1) {
+            // Clear the progress text 5 seconds after completion.
+            setTimeout(() => {
+              if (elements.host.loadStatus.contains(taskElement)) {
+                elements.host.loadStatus.removeChild(taskElement);
+              }
+            }, 5000);
+          }
         };
         client = await webllm.CreateWebWorkerMLCEngine(
           new Worker(new URL("./llm-worker.ts", import.meta.url), { type: "module" }),

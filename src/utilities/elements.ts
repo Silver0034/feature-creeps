@@ -1,7 +1,5 @@
 import { state, Role } from "@utilities/state";
 
-// TODO: Consider merging this file with state.ts.
-
 export let elements = {
   gameState: document.getElementById("gameState") as HTMLInputElement,
   host: {

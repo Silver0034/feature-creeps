@@ -20,7 +20,6 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
       const [sendName, getName] = this.room.makeAction<NameData>("name");
       this.sendName = sendName;
       getName(async (data, peerId) => {
-        // TODO: The first player to provide their name should be the VIP.
         try {
           if (!this.isNameData(data)) {
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);

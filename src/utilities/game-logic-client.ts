@@ -186,7 +186,7 @@ export async function options() {
 }
 
 export async function notify() {
-  // TODO: Make this optional?
+  // TODO: Make these optional?
   navigator.vibrate(200);
   // Play a notification tone.
   const base = import.meta.env.BASE_URL ?? '/';

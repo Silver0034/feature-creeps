@@ -1,4 +1,4 @@
-import { state } from "@utilities/state"
+import { state } from "@utilities/state";
 
 export interface CharacterSheetData {
 	name: string
@@ -99,7 +99,6 @@ ${weaknessesStr}`
 	}
 
 	static fromJSON(json: string): CharacterSheet {
-		// TODO: Need to safe parse this too?
 		const parsedJson = JSON.parse(json);
 
 		// Extract required properties.

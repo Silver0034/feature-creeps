@@ -1,8 +1,8 @@
 import * as AsyncLock from "async-lock";
 import { elements } from "@utilities/elements";
 import { notify } from "@utilities/game-logic-client";
-import { promises } from "@utilities/promises"
-import { validateAbility, balanceAbility, generateClass, combat } from "@utilities/prompts"
+import { promises } from "@utilities/promises";
+import { validateAbility, balanceAbility, generateClass, combat } from "@utilities/wrapper";
 import { GameState, Role, state } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
@@ -65,7 +65,6 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             this.inProgress.delete(peerId);
             return;
           } else {
-            // TODO: Assuming it's a strength for now.
             player.sheet.strengths.push(data.ability);
             // Only add a complimentary weakness if it isn't already there.
             if (player.sheet.strengths.length > player.sheet.weaknesses.length) {
@@ -109,7 +108,6 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             elements.client.sheet.style.display = "none";
             return;
           }
-          // TODO: Display this in the GUI.
           console.log(`Got ability feedback from ${peerId}: ${data.feedback}`);
           this.handleInvalidAbility(data.feedback);
         } catch (error) {

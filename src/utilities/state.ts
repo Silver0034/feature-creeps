@@ -1,13 +1,8 @@
 // Stores game state.
 // Other TS can reference this for its various functions.
 // Saves and loads state to localStorage.
-// TODO: Carefully consider which state to save, which to regenerate, and which to keep private.
-// TODO: Carefully consider when to initialize (or re-initialize) code based on changed state.
 
-import { CharacterSheet } from '@utilities/character-sheet';
-import { initTts } from '@utilities/tts';
-import { initLlm } from '@utilities/openai';
-import { promises } from "@utilities/promises"
+import { CharacterSheet } from "@utilities/character-sheet";
 
 export enum GameState {
   Options = 1,
@@ -126,17 +121,7 @@ export async function loadGame(): Promise<boolean> {
     state.options = JSON.parse(savedData);
     // TODO: If we include connection info in the game state,
     // then we may need clear them and redo the connection process.
-    console.log('Game loaded successfully from local storage.');
-
-    // TODO: Disabled, at least for now.
-    // It is dangerous if the saved settings are unreasonable for the machine.
-    // console.log('Restoring selected models...');
-    // if (state.options.tts.type) {
-    //   promises.tts = initTts({});
-    // }
-    // if (state.options.inference.engine) {
-    //   promises.llm = initLlm({});
-    // }
+    console.log('Game loaded successfully from local storage.', state);
 
     return true;
   } catch (error: any) {

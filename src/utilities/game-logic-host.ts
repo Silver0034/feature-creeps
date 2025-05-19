@@ -4,7 +4,7 @@ import type { CharacterSheet } from "@utilities/character-sheet";
 import { elements, validateElements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
 import { promises } from "@utilities/promises"
-import { generateEnemy, genBattleRoyale } from "@utilities/prompts";
+import { generateEnemy, genBattleRoyale } from "@utilities/wrapper";
 import { state, GameState, Role, saveGame, loadGame } from "@utilities/state";
 import { tts, initTts, longSpeak } from "@utilities/tts";
 
@@ -34,9 +34,6 @@ const VALID_OPTIONS = {
     ["none", "None"]
   ] as [string, string][],
 };
-
-// TODO: Analyze all places where we log to console.
-// Be sure to put most of it on-screen for players to see.
 
 // TODO: Music system. Layered instruments.
 
@@ -117,8 +114,6 @@ async function init() {
     // Make sure the inference engines are ready to go.
     // TODO: Sometimes these fail to initialize on first use. Figure out why,
     // and, failing that, figure out how to warn the host.
-    // TODO: Provide loading progress for these. Especially because new models
-    // can take a long time to download on first use.
     if (!promises.tts) {
       promises.tts = initTts({ reload: false });
     }
@@ -242,6 +237,8 @@ async function intro() {
   // Wait for the first creep to be generated before changing state.
   await promises.enemies[0];
 
+  elements.host.story.innerText = "";
+
   await runStateLogic(GameState.RoundAbilities);
 }
 
@@ -275,12 +272,6 @@ async function roundBattle() {
   // Play out each battle.
   for (const promise of promises.battles) {
     const [winner, description, c1, c2] = await promise;
-    // TODO: Show player cards on screen.
-    // TEMP: Don't care about who is the player and who is the enemy yet. A more
-    // permanent system may be to randomize c1 and c2 internally in the request
-    // instead of in the game logic. That way, c1 is always the player. We would
-    // also benefit from having access to the player's sheet before getting the
-    // response.
     elements.host.player.innerText = c1.toString();
     elements.host.enemy.innerText = c2.toString();
     console.log(`${c1.name} vs ${c2.name}`);
@@ -292,6 +283,7 @@ async function roundBattle() {
     winner.wins += 1;
     const winText = `${winner.name} wins!`;
     console.log(winText);
+    // TODO: Show on screen.
     await longSpeak(winText);
   }
 
@@ -367,7 +359,6 @@ async function end() {
   state.gameState = GameState.Init;
 }
 
-// TODO: Make everything in this menu functional.
 // TODO: Storytellers with different personalities and voices?
 async function options() {
   let models: any[] = [];
