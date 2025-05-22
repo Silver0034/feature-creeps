@@ -256,8 +256,7 @@ async function roundAbilities() {
 
   // TODO: Add a timer.
   // https://stackoverflow.com/questions/73389954/how-to-sync-html5-audio-across-browsers
-  // TODO: Add a “safety quip” fallback is a user doesn’t answer in time or
-  // chooses to have AI generate for them. Make them silly. 
+  // TODO: Add a “safety quip” fallback is a user doesn’t answer in time.
 
   // Request new abilities from players.
   // TODO: Point out last players that need to decide abilities, on-screen.

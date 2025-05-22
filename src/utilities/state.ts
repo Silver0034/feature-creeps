@@ -48,6 +48,8 @@ interface OptionsConfig {
   numRounds: number;
   inference: InferenceConfig;
   tts: TTSConfig;
+  soundEffects: boolean;
+  vibrate: boolean;
 }
 
 interface TTSConfig {
@@ -71,7 +73,7 @@ export interface PlayerData {
   status: string,
 }
 
-// Reasonable defaults are set here as needed.
+// Defaults are set here.
 export let state: State = {
   gameState: GameState.Init as GameState,
   room: {
@@ -84,6 +86,7 @@ export let state: State = {
   vipId: undefined,
   role: Role.Unset as Role,
   options: {
+    // Server options.
     skipIntro: false,
     autoFullscreen: true,
     numRounds: 3 as number,
@@ -98,6 +101,9 @@ export let state: State = {
       type: "kokoro" as string,
       voice: "Heart",
     },
+    // Client options.
+    soundEffects: true,
+    vibrate: true,
   } as OptionsConfig,
   round: 0 as number,
   players: [] as Array<PlayerData>,

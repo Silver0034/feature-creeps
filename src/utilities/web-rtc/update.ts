@@ -37,7 +37,8 @@ export function updateMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           // Clients call their relevant methods from here.
           if (state.role = Role.Client) {
             switch (state.gameState) {
-              case GameState.Options: { await client.options(); break; }
+              // Options state is never and should never be sent to clients.
+              // case GameState.Options: { await client.options(); break; }
               case GameState.Init: { await client.init(); break; }
               case GameState.Connect: { await client.connect(); break; }
               case GameState.Intro: { await client.intro(); break; }

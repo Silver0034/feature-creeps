@@ -12,12 +12,18 @@ type ServerData = { secret: string, vipId: string };
 export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
   return class extends Base {
     private vipLock = new AsyncLock.default();
+    private connectTaskElement: HTMLElement = document.createElement('p');
     public sendServer!: (data: ServerData, peerId?: string) => void;
     constructor(...args: any[]) {
       super(...args);
       this.registerServerActions();
     }
     private registerServerActions(): void {
+      if (state.role == Role.Client) {
+        this.connectTaskElement = document.createElement('p');
+        this.connectTaskElement.textContent = `Connecting to host...`;
+        elements.client.messages.appendChild(this.connectTaskElement);
+      }
       this.room.onPeerJoin(this.onPeerJoin.bind(this));
 
       const [sendServer, getServer] = this.room.makeAction<ServerData>("server");
@@ -30,7 +36,15 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           if (state.role != Role.Client) {
             throw new Error(`Ignoring server info sent by ${peerId} to a ${Role[state.role]}`);
           }
+
           console.log(`${peerId} is the server: ${JSON.stringify(data)}`);
+          this.connectTaskElement.textContent = `Successfully connected to the host!`;
+          // Clear the text after 5 seconds.
+          setTimeout(() => {
+            if (elements.client.messages.contains(this.connectTaskElement)) {
+              elements.client.messages.removeChild(this.connectTaskElement);
+            }
+          }, 5000);
 
           // Hide the room code entry. We have found a working room.
           elements.client.roomDiv.style.display = "none";

@@ -4,18 +4,21 @@
 
 - [KoboldCpp](https://github.com/LostRuins/koboldcpp):
   - Defaults to port `5001`.
-- [LLaMA.cpp HTTP Server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md): Suggested command: `./llama-server --prio 2 --ctx_size 0 --flash-attn --gpu-layers 9999 -m /Users/kenneth/text-generation-webui/user_data/models/gemma-3-27b-it-Q8_0.gguf --log-colors --host 0.0.0.0 --port 1234`
+- [LLaMA.cpp HTTP Server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md):
+  - Defaults to port `8080`.
+  - Example command: `./llama-server --prio 2 --ctx_size 0 --flash-attn --gpu-layers 9999 -m /Users/kenneth/text-generation-webui/user_data/models/gemma-3-27b-it-Q8_0.gguf --log-colors --host 0.0.0.0 --port 8080`
 - [LM Studio](https://lmstudio.ai/):
   - [Provides](https://lmstudio.ai/docs/app/api/endpoints/openai) an OpenAI compatible API.
     - Defaults to port `1234`.
-    - Must load a model before use.
+    - Must [load](https://lmstudio.ai/docs/cli/load) a model after start but before use (e.g., `lms load <model_key>`).
   - [Requires](https://lmstudio.ai/docs/cli/server-start) running with `lms server start --cors` to enable CORS support.
   - [Supports](https://lmstudio.ai/docs/app/api/structured-output) `response_format`, but only in the updated form used by the modern OpenAI API.
 - [Ollama](https://ollama.com/):
   - [Provides](https://ollama.com/blog/openai-compatibility) an OpenAI compatible API.
     - Defaults to port `11434`.
     - [Requires](https://github.com/ollama/ollama-js/issues/73) setting the `OLLAMA_HOST` environment variable to `0.0.0.0` to access it on a different machine on the network.
-  - [Supports](https://ollama.com/blog/structured-outputs) `response_format`. Full list of supported features [here](https://github.com/ollama/ollama/blob/main/docs/openai.md).
+  - [Supports](https://ollama.com/blog/structured-outputs) `response_format`.
+    - Full list of supported features [here](https://github.com/ollama/ollama/blob/main/docs/openai.md).
   - May want to increase context limit with `/set parameter num_ctx <size>`.
   - Example Usage:
   ```bash
@@ -25,7 +28,7 @@
   ollama run qwen3:30b-a3b-q8_0
   /set parameter num_ctx 40960
   ```
-  - TODO: Must always set a valid `state.options.inference.modelName`. All other tested API implementations are fine ignoring it.
+  - TODO: Must always set a valid `state.options.inference.modelName`. All other tested API implementations are fine ignoring it. For now, that means we don't *actually* support Ollama, but it's an issue on my end, not theirs.
 
 # List of known <span style="color:red">unsupported</span> LLM API endpoints
 

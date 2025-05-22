@@ -1,7 +1,7 @@
 import { selfId } from "trystero/mqtt";
 import { CharacterSheet } from "@utilities/character-sheet";
 import { elements, validateElements } from "@utilities/elements";
-import { state, GameState, Role } from "@utilities/state";
+import { state, GameState, Role, saveGame, loadGame } from "@utilities/state";
 
 import { WebRTC } from "@utilities/web-rtc";
 import { abilityMixin } from "@utilities/web-rtc/ability";
@@ -26,6 +26,9 @@ function updateStateElement(gameState?: GameState) {
 }
 
 export async function main(): Promise<void> {
+  // Load settings from localStorage.
+  loadGame();
+
   state.role = Role.Client;
   validateElements();
   await init();
@@ -36,6 +39,40 @@ export async function init() {
   queryStrings = new Proxy(Object.create(null), {
     get: (_, prop: string) => new URLSearchParams(window.location.search).get(prop) ?? null,
   }) as Record<string, string | null>;
+
+
+  // Set up options menu triggers.
+  elements.client.optionsButton.onclick = () => {
+    if (elements.client.optionsDiv.style.display === "block") {
+      // Save updated state.
+      state.options.soundEffects = elements.client.options.soundEffects.checked;
+      state.options.vibrate = elements.client.options.vibrate.checked;
+      elements.client.optionsDiv.style.display = "none";
+      // Save settings to localStorage.
+      saveGame();
+    } else {
+      // Load state to the UI.
+      elements.client.options.soundEffects.checked = state.options.soundEffects;
+      elements.client.options.vibrate.checked = state.options.vibrate;
+      elements.client.optionsDiv.style.display = "block";
+    }
+  };
+  elements.client.options.testSoundEffects.onclick = () => {
+    playSound(true);
+  };
+  elements.client.options.testVibrate.onclick = () => {
+    vibrate(true);
+  };
+  elements.client.options.saveConfig.onclick = () => {
+    // Save updated state.
+    state.options.soundEffects = elements.client.options.soundEffects.checked;
+    state.options.vibrate = elements.client.options.vibrate.checked;
+    elements.client.optionsDiv.style.display = "none";
+    // Save settings to localStorage.
+    saveGame();
+  };
+
+
   await connect();
 }
 
@@ -190,14 +227,12 @@ export async function end() {
 
 export async function options() {
   updateStateElement();
-  // No options for clients yet.
-  // Maybe sound effects and vibration?
 }
 
-export async function notify() {
-  // TODO: Make these optional?
-  navigator.vibrate(200);
-  // Play a notification tone.
+function playSound(override: boolean = false) {
+  if (!state.options.soundEffects && !override) {
+    return;
+  }
   const base = import.meta.env.BASE_URL ?? '/';
   const audio = new Audio(base.endsWith('/') ?
     base + 'sounds/bottleTap.flac' :
@@ -206,6 +241,18 @@ export async function notify() {
   audio.play().catch(error => {
     console.error("Failed to play notification tone:", error);
   });
+}
+
+function vibrate(override: boolean = false) {
+  if (!state.options.vibrate && !override) {
+    return;
+  }
+  navigator.vibrate(200);
+}
+
+export async function notify() {
+  vibrate();
+  playSound();
 }
 
 export async function updateSheet(sheet: CharacterSheet) {

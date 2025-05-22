@@ -156,7 +156,7 @@ Weakness: Social Pariah
 Strength: Reality Manipulation
 Weakness: Random Amnesia
 
-Keep the ability brief and avoid abilities that conflict with the existing character sheet:
+Keep the ability brief and avoid abilities that overlap or conflict with the existing character sheet:
 ${character.toString()}`,
       },
       {
@@ -190,7 +190,7 @@ Examples: "Unreasonably Fast Hat Spinning", "Sneeze-Powered Jump", "Glow-in-the-
       },
       {
         'role': 'user',
-        'content': `${character.toJSON()}`
+        'content': `${character.toString()}`
       }
     ]
   });

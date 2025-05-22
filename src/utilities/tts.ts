@@ -443,7 +443,6 @@ function chunkSpeech(text: string): string[] {
   // Remove some spoken characters.
   text = text.replace(/\*/g, "");
 
-  // TODO: Remove empty strings, or strings that only contain separators.
   const separators = /([.?!\n])/g;
   return text
     .split(separators)
