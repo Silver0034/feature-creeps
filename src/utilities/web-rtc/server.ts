@@ -41,7 +41,8 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
             state.players.push({
               sheet: new CharacterSheet(),
               secret: data.secret,
-              peerId: selfId
+              peerId: selfId,
+              status: ""
             });
           } else {
             player.secret = data.secret;
@@ -83,7 +84,8 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           state.players.push({
             sheet: new CharacterSheet(),
             secret: secret,
-            peerId: peerId
+            peerId: peerId,
+            status: "Joined."
           });
         } else {
           player.secret = secret;
@@ -97,7 +99,8 @@ export function serverMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           state.players.push({
             sheet: new CharacterSheet(),
             secret: "",
-            peerId: peerId
+            peerId: peerId,
+            status: ""
           });
         }
       }

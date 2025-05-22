@@ -34,7 +34,8 @@ export function sheetMixin<TBase extends new (...args: any[]) => WebRTC>(Base: T
             state.players.push({
               sheet: sheet,
               secret: "",
-              peerId: selfId
+              peerId: selfId,
+              status: ""
             });
           } else {
             player.sheet = sheet;

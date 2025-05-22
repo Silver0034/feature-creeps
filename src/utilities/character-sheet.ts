@@ -21,10 +21,12 @@ export class CharacterSheet {
 
 	toString(): string {
 		const strengthsStr =
-			this.strengths.length > 0 ? this.strengths.join('\n') : 'None yet!'
+			this.strengths.length > 0
+				? this.strengths.map(s => `- ${s}`).join('\n')
+				: 'None yet!'
 		const weaknessesStr =
 			this.weaknesses.length > 0
-				? this.weaknesses.join('\n')
+				? this.weaknesses.map(w => `- ${w}`).join('\n')
 				: 'None yet!'
 
 		return `Name: ${this.name}
@@ -36,48 +38,50 @@ Weaknesses:
 ${weaknessesStr}`
 	}
 
-	// TODO: Make the number of strengths and weaknesses no more than the character's level.
-	static getSchema(level: number, numAbilities: number): object | string {
-		// NOTE: The local inference engine only supports a subset of the required schema features. As a result, we cannot use minItems or const. This may generate slightly different character sheets than we want.
+	static getSchema(level: number, numAbilities: number): object {
+		// NOTE: The local inference engine only supports a subset of the
+		// required schema features. As a result, we cannot use minItems or
+		// const. This may generate slightly different character sheets than we
+		// want.
 		if (state.options.inference.engine === "local") {
-			return `{
+			return {
 				"properties": {
 					"name": { "type": "string" },
-					"className": { "type": "string"},
-					"level": {"type": "integer"},
+					"className": { "type": "string" },
+					"level": { "type": "integer" },
 					"strengths": {
 						"type": "array",
-						"items": {"type": "string"}
+						"items": { "type": "string" }
 					},
 					"weaknesses": {
 						"type": "array",
-						"items": {"type": "string"}
+						"items": { "type": "string" }
 					}
 				},
 				"required": ["name", "className", "level", "strengths", "weaknesses"],
 				"type": "object"
-			}`
-		}
-		else {
+			};
+		} else {
 			return {
 				properties: {
 					name: { type: 'string' },
 					className: { type: 'string' },
 					level: { const: level },
-					// level: { type: 'integer' },
 					strengths: {
 						type: 'array',
 						items: { type: 'string' },
-						contains: numAbilities
+						minItems: Math.max(1, Math.min(5, level)),
+						maxItems: Math.max(1, Math.min(5, level))
 					},
 					weaknesses: {
 						type: 'array',
 						items: { type: 'string' },
-						contains: numAbilities
+						minItems: Math.max(1, Math.min(3, 20 - level)),
+						maxItems: Math.max(1, Math.min(3, 20 - level))
 					}
 				},
 				required: ['name', 'className', 'level', 'strengths', 'weaknesses']
-			}
+			};
 		}
 	}
 
@@ -91,7 +95,7 @@ ${weaknessesStr}`
 			strengths: this.strengths,
 			weaknesses: this.weaknesses
 		} as any;
-		if(!hideWins) {
+		if (!hideWins) {
 			// Wins may bias the AI to have characters steamroll. Remove them.
 			json.wins = this.wins;
 		}
@@ -99,7 +103,12 @@ ${weaknessesStr}`
 	}
 
 	static fromJSON(json: string): CharacterSheet {
-		const parsedJson = JSON.parse(json);
+		let parsedJson = JSON.parse(json);
+		// Some implementations of json_object schema enforcement return a JSON
+		// array with one element. We must strip it down to the desired object.
+		if (Array.isArray(parsedJson)) {
+			parsedJson = parsedJson[0];
+		}
 
 		// Extract required properties.
 		const { name, className, level, strengths, weaknesses } = parsedJson;

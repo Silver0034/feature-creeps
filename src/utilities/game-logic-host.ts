@@ -1,5 +1,8 @@
+import DOMPurify from "dompurify";
 import QRCode from "qrcode-svg";
+import { marked } from "marked";
 import { selfId } from "trystero/mqtt";
+
 import type { CharacterSheet } from "@utilities/character-sheet";
 import { elements, validateElements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
@@ -112,8 +115,6 @@ export async function runStateLogic(newState?: GameState) {
 async function init() {
   elements.host.startButton.onclick = async () => {
     // Make sure the inference engines are ready to go.
-    // TODO: Sometimes these fail to initialize on first use. Figure out why,
-    // and, failing that, figure out how to warn the host.
     if (!promises.tts) {
       promises.tts = initTts({ reload: false });
     }
@@ -227,17 +228,21 @@ async function intro() {
     explainString = "Let the games begin!";
   } else {
     // Explain game rules.
-    explainString = "Feature Creeps is a roleplaying adventure game where players level up, add new abilities to their character sheets, and face monsters. Every round, a randomly generated Creep will appear. You'll have the chance to read their character sheet before deciding how to improve your character to face them in combat. When you add a new strength, you can write down literally anything you want, so long as it isn't in conflict with your existing abilities. Let your imagination run wild! But don't be too greedy: with every strength you add to your character, an equally harmful weakness gets added too. Keep in mind the final bonus round, where players will fight each other in a climatic battle royale. Can you survive, or will feature creep be your own undoing?";
+    explainString = "**Feature Creeps** is a roleplaying adventure game where players level up, add new abilities to their character sheets, and face monsters. Every round, a randomly generated *Creep* will appear. You'll have the chance to read their character sheet before deciding how to improve your character to face them in combat. When you add a new strength, you can write down *literally* anything you want, so long as it isn't in conflict with your existing abilities. Let your imagination run wild! But don't be too greedy: with every **strength** you add to your character, an equally harmful **weakness** gets added too. Keep in mind the final bonus round, where players will fight each other in a climatic battle royale. Can you survive, or will feature creep be your own undoing?";
     // Don't play the intro multiple times in the same session.
     state.options.skipIntro = true;
   }
-  elements.host.story.innerText = explainString;
+
+  const rawHTML = await marked.parse(explainString);
+  const sanitized = DOMPurify.sanitize(rawHTML);
+  elements.host.story.innerHTML = sanitized;
+
   await longSpeak(explainString);
 
   // Wait for the first creep to be generated before changing state.
   await promises.enemies[0];
 
-  elements.host.story.innerText = "";
+  elements.host.story.innerHTML = "";
 
   await runStateLogic(GameState.RoundAbilities);
 }
@@ -278,7 +283,13 @@ async function roundBattle() {
     console.log(c1.toString());
     console.log(c2.toString());
     // TODO: Combat sounds system.
-    elements.host.story.innerText = description;
+
+    // Some LLMs like to provide the text in markdown. Embrace it and render
+    // such text properly.
+    const rawHTML = await marked.parse(description);
+    const sanitized = DOMPurify.sanitize(rawHTML);
+    elements.host.story.innerHTML = sanitized;
+
     await longSpeak(description);
     winner.wins += 1;
     const winText = `${winner.name} wins!`;
@@ -288,6 +299,7 @@ async function roundBattle() {
     await longSpeak(winText);
     // Display the winner for a moment longer.
     await new Promise(resolve => setTimeout(resolve, 5000));
+    elements.host.story.innerHTML = "";
     elements.host.winner.style.display = "none";
   }
 
@@ -322,13 +334,20 @@ async function battleRoyale() {
   elements.host.player.style.display = "none";
   elements.host.enemy.style.display = "none";
 
-  elements.host.story.innerText = description;
+  // Some LLMs like to provide the text in markdown. Embrace it and render
+  // such text properly.
+  const rawHTML = await marked.parse(description);
+  const sanitized = DOMPurify.sanitize(rawHTML);
+  elements.host.story.innerHTML = sanitized;
+
   await longSpeak(description);
   if (!winner) throw Error("No winner was chosen by the model.");
   winner.wins += 1;
   const winText = `${winner.name} wins!`;
   console.log(winText);
   await longSpeak(winText);
+  // Clear out the story for the next state.
+  elements.host.story.innerHTML = "";
   await runStateLogic(GameState.Leaderboard);
 }
 
@@ -393,10 +412,10 @@ async function options() {
     state.options.inference.engine = elements.host.options.inferenceEngine.value;
 
     if (state.options.inference.engine === "local") {
+      elements.host.options.inferenceModelRow.style.display = "block";
       elements.host.options.inferenceApiRow.style.display = "none";
 
       models = await listModels();
-
       const modelStrings = models.map((model): [string, string] => {
         const vram = model.vram_required_MB;
         const formattedVram = vram ?
@@ -410,10 +429,18 @@ async function options() {
 
       populateDropdownPairs(elements.host.options.inferenceModel, modelStrings, state.options.inference.modelName || "Choose an LLM engine first.");
 
-      elements.host.options.inferenceModelRow.style.display = "block";
     } else if (state.options.inference.engine === "API") {
-      elements.host.options.inferenceModelRow.style.display = "none";
       elements.host.options.inferenceApiRow.style.display = "block";
+
+      models = await listModels();
+      if (models && models.length > 0) {
+        elements.host.options.inferenceModelRow.style.display = "block";
+        populateDropdownPairs(elements.host.options.inferenceModel,
+          models.map(model => model.id),
+          state.options.inference.modelName || "Choose an LLM engine first.");
+      } else {
+        elements.host.options.inferenceModelRow.style.display = "none";
+      }
     }
   }
 
@@ -542,6 +569,15 @@ async function options() {
       state.options.numRounds = parsedRounds;
       // TODO: On-screen warning.
     }
+
+    // Reload LLM if these changed.
+    let reloadLlm = false;
+    if (state.options.inference.engine !== elements.host.options.inferenceEngine.value ||
+      state.options.inference.modelName !== elements.host.options.inferenceModel.value ||
+      state.options.inference.apiURL !== elements.host.options.inferenceApiUrl.value ||
+      state.options.inference.apiKey !== elements.host.options.inferenceApiKey.value) {
+      reloadLlm = true;
+    }
     state.options.inference.engine = elements.host.options.inferenceEngine.value;
     state.options.inference.modelName = elements.host.options.inferenceModel.value;
     const parsedTemperature = parseFloat(elements.host.options.temperature.value);
@@ -551,6 +587,10 @@ async function options() {
     }
     state.options.inference.apiURL = elements.host.options.inferenceApiUrl.value;
     state.options.inference.apiKey = elements.host.options.inferenceApiKey.value;
+    if (reloadLlm) {
+      promises.llm = initLlm({ reload: true });
+    }
+
     // Reload TTS if these changed.
     let reloadTts = false;
     if (state.options.tts.type !== elements.host.options.ttsType.value ||
@@ -560,7 +600,7 @@ async function options() {
     state.options.tts.type = elements.host.options.ttsType.value;
     state.options.tts.voice = elements.host.options.ttsVoice.value;
     if (reloadTts) {
-      await initTts({ reload: true });
+      promises.tts = initTts({ reload: true });
     }
 
     console.log(state);

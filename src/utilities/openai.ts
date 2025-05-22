@@ -29,10 +29,20 @@ async function queryGPUFeatures(): Promise<{ isF16Supported: boolean; maxStorage
   return { isF16Supported: false, maxStorageBufferBindingSize: 0 };
 }
 
-export async function listModels(): Promise<webllm.ModelRecord[]> {
+export async function listModels(): Promise<any[]> {
   if (state.options.inference.engine != "local") {
     return [];
   }
+  // TODO: If we want to support this, we have to improve our error handling and
+  // make sure this happens in the proper order of operations.
+  // if (state.options.inference.engine != "local") {
+  //   if (!state.options.inference.apiURL || !state.options.inference.apiKey) {
+  //     return [];
+  //   }
+  //   await initLlm({ reload: false });
+  //   return (await (client as OpenAI).models.list()).data;
+  // }
+
   const { isF16Supported, maxStorageBufferBindingSize } = await queryGPUFeatures();
   const suffix = isF16Supported ? "f16" : "f32";
   const vram_limit = maxStorageBufferBindingSize / 1024.0;
@@ -87,6 +97,9 @@ export async function initLlm(options: {
         const taskElement = document.createElement('p');
         const initProgressCallback = (report: webllm.InitProgressReport) => {
           console.log(report);
+          if (!elements.host.loadStatus) {
+            return;
+          }
           taskElement.textContent = `LLM Status: ${report.text}`;
           elements.host.loadStatus.appendChild(taskElement);
           if (report.progress == 1) {
@@ -124,9 +137,29 @@ export async function initLlm(options: {
   }
 }
 
-export function formatSchema(schema: object): any {
+export function formatResponse(schema: any): any {
+  let response_format: any = {};
   if (state.options.inference.engine === "local") {
-    return JSON.stringify(schema);
+    response_format.type = 'json_object';
+    // WebLLM Prefers JSON provided as a string.
+    response_format.schema = JSON.stringify(schema);
+    return response_format;
   }
-  return schema;
+  // This old formatting approach may be required for some OpenAI API
+  // implementations, but most use the modern form instead.
+  const legacy = false;
+  if (legacy) {
+    // NOTE: KoboldCpp supports either approach, but the old format seems to be
+    // more reliable.
+    response_format.type = 'json_object';
+    response_format.schema = schema;
+    return response_format;
+  }
+  response_format.type = 'json_schema';
+  response_format.json_schema = {
+    "name": "schema",
+    "strict": true,
+    "schema": schema
+  };
+  return response_format;
 }

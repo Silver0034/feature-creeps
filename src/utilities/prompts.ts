@@ -1,5 +1,6 @@
 import { CharacterSheet } from "@utilities/character-sheet";
-import { client, formatSchema } from "@utilities/openai";
+import { getRandomTheme } from "@utilities/enemy-themes";
+import { client, formatResponse } from "@utilities/openai";
 import { state } from "@utilities/state";
 
 // TODO: Test models and provide info about which we recommend.
@@ -25,7 +26,13 @@ function sanitizeJSON(jsonString: string): string {
 function safeParseJSON(jsonString: string): any | null {
   try {
     const sanitized = sanitizeJSON(jsonString);
-    return JSON.parse(sanitized);
+    let parsedResponse = JSON.parse(sanitized);
+    // Some implementations of json schema enforcement return a JSON
+    // array with one element. We must strip it down to the desired object.
+    if (Array.isArray(parsedResponse)) {
+      parsedResponse = parsedResponse[0];
+    }
+    return parsedResponse;
   } catch (error) {
     console.error("Invalid JSON:", error);
     return null;
@@ -39,7 +46,7 @@ export async function isStrength(
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: 0,
-    response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "Rationale": { "type": "string" }, "Decision": { "type": "string", "enum": ["Strength", "Weakness"] } }, "required": ["Rationale", "Decision"] }) },
+    response_format: formatResponse({ "type": "object", "properties": { "Rationale": { "type": "string" }, "Decision": { "type": "string", "enum": ["Strength", "Weakness"] } }, "required": ["Rationale", "Decision"] }),
     stop: "<|end|>",
     messages: [
       {
@@ -91,7 +98,7 @@ export async function balanceAbility(
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: 0,
-    response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "Strength": { "type": "string" }, "Weakness": { "type": "string" } }, "required": [isStrength ? "Weakness" : "Strength"] }) },
+    response_format: formatResponse({ "type": "object", "properties": { "Strength": { "type": "string" }, "Weakness": { "type": "string" } }, "required": [isStrength ? "Weakness" : "Strength"] }),
     stop: "<|end|>",
     messages: [
       {
@@ -147,7 +154,10 @@ Strength: Mind Control
 Weakness: Social Pariah
 
 Strength: Reality Manipulation
-Weakness: Random Amnesia`,
+Weakness: Random Amnesia
+
+Keep the ability brief and avoid abilities that conflict with the existing character sheet:
+${character.toString()}`,
       },
       {
         'role': 'user',
@@ -167,11 +177,37 @@ Weakness: Random Amnesia`,
   }
 }
 
+export async function fallbackAbility(character: CharacterSheet): Promise<string> {
+  const reply = await client.chat.completions.create({
+    model: state.options.inference.modelName,
+    response_format: formatResponse({ "type": "object", "properties": { "Strength": { "type": "string" } }, "required": ["Strength"] }),
+    stop: "<|end|>",
+    messages: [
+      {
+        'role': 'system',
+        'content': `You are an expert in designing balanced character abilities. Given the following character sheet, generate a brief, random, goofy, and insignificant strength for this character — only output the ability’s name (3–6 words), with no explanation or description.
+Examples: "Unreasonably Fast Hat Spinning", "Sneeze-Powered Jump", "Glow-in-the-Dark Elbows"`,
+      },
+      {
+        'role': 'user',
+        'content': `${character.toJSON()}`
+      }
+    ]
+  });
+  console.log("fallbackAbility", reply)
+  const parsedResponse = safeParseJSON(reply.choices[0].message.content);
+
+  if (!("Strength" in parsedResponse)) {
+    throw new Error('No fallback ability was generated.');
+  }
+  return parsedResponse["Strength"];
+}
+
 export async function generateClass(character: CharacterSheet): Promise<string> {
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: 0,
-    response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "new_className": { "type": "string" } }, "required": ["new_className"] }) },
+    response_format: formatResponse({ "type": "object", "properties": { "new_className": { "type": "string" } }, "required": ["new_className"] }),
     stop: "<|end|>",
     messages: [
       {
@@ -197,7 +233,7 @@ export async function validateAbility(
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: 0,
-    response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "reasoning": { "type": "string" }, "conflict": { "type": "string", "enum": ["Yes", "No"] } }, "required": ["reasoning", "conflict"] }) },
+    response_format: formatResponse({ "type": "object", "properties": { "reasoning": { "type": "string" }, "conflict": { "type": "string", "enum": ["Yes", "No"] } }, "required": ["reasoning", "conflict"] }),
     stop: "<|end|>",
     messages: [
       {
@@ -232,12 +268,12 @@ export async function combat(
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: state.options.inference.temperature,
-    response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "fight_description": { "type": "string" }, "winner": { "type": "string", "enum": [c1.name, c2.name] } }, "required": ["fight_description", "winner"] }) },
+    response_format: formatResponse({ "type": "object", "properties": { "fight_description": { "type": "string" }, "winner": { "type": "string", "enum": [c1.name, c2.name] } }, "required": ["fight_description", "winner"] }),
     stop: "<|end|>",
     messages: [
       {
         'role': 'system',
-        'content': `You are an expert in narrating epic battles between characters. Given the character sheets for two combatants, craft a brief but thrilling account of their fight. Incorporate their strengths and weaknesses dynamically and only when relevant, and engage the reader with tension, creativity, humor, and other exciting literary techniques. Keep the description to a single paragraph. The story ends with a single, decisive victor.
+        'content': `You are an expert in narrating epic battles between characters. Given the character sheets for two combatants, craft a brief but thrilling account of their fight. Incorporate their strengths and weaknesses dynamically and only when relevant, and engage the reader with tension, creativity, humor, and other exciting literary techniques. Keep the description to a single paragraph, formatted in markdown. The story ends with a single, decisive victor.
 
 Examples:
 
@@ -268,10 +304,12 @@ Output: { "fight_description": "Lady Seraphina stayed airborne, blasting Grimgor
   }
 }
 
-// TODO: Allow players (and the audience) to provide enemy suggestions.
-// TODO: Rework creep generation to improve diversity.
 export async function generateEnemy(level: number): Promise<CharacterSheet> {
   const adjustedLevel = Math.ceil(20 * level / state.options.numRounds);
+  // TODO: Allow players (and the audience) to provide enemy suggestions.
+  // I have a massive fallback list to use by default.
+  const theme = getRandomTheme();
+
   // TODO: Final boss monster should take existing player abilities into account and create something specifically designed to counter as many players as possible.
   const blightfang = Object.assign(new CharacterSheet(), {
     name: 'The Blightfang',
@@ -344,36 +382,19 @@ export async function generateEnemy(level: number): Promise<CharacterSheet> {
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: state.options.inference.temperature,
-    response_format: { 'type': 'json_object', 'schema': CharacterSheet.getSchema(adjustedLevel, level) },
+    response_format: formatResponse(CharacterSheet.getSchema(adjustedLevel, level)),
     stop: "<|end|>",
     messages: [
       {
         'role': 'system',
-        'content': `You are an expert in creating balanced characters for role-playing games. Given the level of a character, with 20 being the max level, your task is to generate a unique character with interesting skills. The character should have a mix of strengths and weaknesses, having ${level} strengths and ${level} weaknesses. The character could be anything: a monster, a heroic adventurer, even goofy things like home appliances or high-minded concepts. Be inventive! Generate the output in JSON format, including the character's name, class, level, strengths, and weaknesses.
+        'content': `You are an expert in creating balanced characters for role-playing games. Given the level of a character, with 20 being the max level, your task is to generate a unique character with interesting skills. The character should have a mix of strengths and weaknesses, having ${Math.max(1, Math.min(5, level))} strengths and ${Math.max(1, Math.min(3, 20 - level))} weaknesses. The character could be anything. Be inventive! Generate the output in JSON format, including the character's name, class, level, strengths, and weaknesses.
 
 Output Format: The output must be in JSON format, including the name, class name, level, strengths, and weaknesses.
 
-Examples:
+Example:
+${generic}
 
-Input: Level: ${blightfang.level}
-Output:
-${blightfang.toJSON()}
-
-Input: Level: ${vorlok.level}
-Output:
-${vorlok.toJSON()}
-
-Input: Level: ${microwave.level}
-Output:
-${microwave.toJSON()}
-
-Input: Level: ${alastor.level}
-Output:
-${alastor.toJSON()}
-
-Input: Level: ${generic.level}
-Output:
-${generic.toJSON()}`,
+Most importantly, please conform to the following theme: ${theme}`,
       },
       {
         'role': 'user',
@@ -393,12 +414,12 @@ export async function genBattleRoyale(players: CharacterSheet[]): Promise<[Chara
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: state.options.inference.temperature,
-    response_format: { 'type': 'json_object', 'schema': formatSchema({ "type": "object", "properties": { "battle_description": { "type": "string" }, "winner": { "type": "string", "enum": players.map(player => player.name) } }, "required": ["battle_description", "winner"] }) },
+    response_format: formatResponse({ "type": "object", "properties": { "battle_description": { "type": "string" }, "winner": { "type": "string", "enum": players.map(player => player.name) } }, "required": ["battle_description", "winner"] }),
     stop: "<|end|>",
     messages: [
       {
         'role': 'system',
-        'content': `You are an expert in crafting epic, cinematic battles between groups of unique characters, reminiscent of the grand, climactic showdowns in blockbuster movies. Given the character sheets for a group of combatants, create a vivid and thrilling narrative of their battle royale. Each character should have a moment to shine, showcasing their strengths, quirks, and weaknesses dynamically. The story should be filled with some combination of tension, creativity, unexpected alliances, betrayals, and dramatic shifts, ensuring that every participant plays a significant role. The narrative should capture the intensity of an all-out battle. The story ends with a single, decisive victor.
+        'content': `You are an expert in crafting epic, cinematic battles between groups of unique characters, reminiscent of the grand, climactic showdowns in blockbuster movies. Given the character sheets for a group of combatants, create a vivid and thrilling narrative of their battle royale. Each character should have a moment to shine, showcasing their strengths, quirks, and weaknesses dynamically. The story should be filled with some combination of tension, creativity, unexpected alliances, betrayals, and dramatic shifts, ensuring that every participant plays a significant role. The narrative should capture the intensity of an all-out battle. Format the output in markdown. The story ends with a single, decisive victor.
 Input:
 {
   "characters": [

@@ -440,8 +440,10 @@ async function speakSentences(
 }
 
 function chunkSpeech(text: string): string[] {
-  // TODO: Filter out sentences that consist only of a punctuation mark.
-  // Kokoro actually "speaks" them.
+  // Remove some spoken characters.
+  text = text.replace(/\*/g, "");
+
+  // TODO: Remove empty strings, or strings that only contain separators.
   const separators = /([.?!\n])/g;
   return text
     .split(separators)
@@ -449,7 +451,10 @@ function chunkSpeech(text: string): string[] {
       if (index % 2 === 0) {
         // Combine sentence with its separator if available.
         const sentence = part.trim() + (array[index + 1] || "");
-        if (sentence.length > 0) chunks.push(sentence);
+        // Filter out empty strings and pure separator strings.
+        if (sentence && !/^[.?!\n\s]*$/.test(sentence)) {
+          chunks.push(sentence);
+        }
       }
       return chunks;
     }, []);

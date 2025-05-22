@@ -67,7 +67,8 @@ export interface PlayerData {
   sheet: CharacterSheet,
   secret: string,
   // NOTE: Must be updated on client reconnect.
-  peerId: string
+  peerId: string,
+  status: string,
 }
 
 // Reasonable defaults are set here as needed.

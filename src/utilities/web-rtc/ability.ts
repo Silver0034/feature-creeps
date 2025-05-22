@@ -2,11 +2,11 @@ import * as AsyncLock from "async-lock";
 import { elements } from "@utilities/elements";
 import { notify } from "@utilities/game-logic-client";
 import { promises } from "@utilities/promises";
-import { validateAbility, balanceAbility, generateClass, combat } from "@utilities/wrapper";
+import { validateAbility, fallbackAbility, balanceAbility, generateClass, combat } from "@utilities/wrapper";
 import { GameState, Role, state } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
-type AbilityData = { ability: string };
+type AbilityData = { ability: string, useFallback: boolean };
 type AbilityFBData = { isValid: boolean, feedback: string };
 
 export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
@@ -28,10 +28,10 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             throw new Error(`Invalid data payload: ${JSON.stringify(data)}`);
           }
           if (state.role != Role.Host) {
-            throw new Error(`Ignoring ability sent by ${peerId} to a ${Role[state.role]}: ${data.ability}`);
+            throw new Error(`Ignoring ability sent by ${peerId} to a ${Role[state.role]}: ${data}`);
           }
           if (state.gameState != GameState.RoundAbilities) {
-            throw new Error(`Ignoring ability sent by ${peerId} while in the ${GameState[state.gameState]} state: ${data.ability}`);
+            throw new Error(`Ignoring ability sent by ${peerId} while in the ${GameState[state.gameState]} state: ${data}`);
           }
           // Each peerId gets their own lock.
           // This ensures that double-submissions can be checked for duplicates one at a time.
@@ -41,7 +41,7 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             }
             this.inProgress.add(peerId);
           });
-          console.log(`Got ability from ${peerId}: ${data.ability}`);
+          console.log(`Got ability from ${peerId}: ${data}`);
           const player = state.players.find(player => player.peerId === peerId);
           if (!player) {
             throw Error(`Could not find player with peerId ${peerId}`);
@@ -50,41 +50,45 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           if (player.sheet.strengths.length > state.round) {
             throw Error(`Ignoring player-provided ability from peerId ${peerId} that already has ${player.sheet.strengths.length} abilities in round ${state.round}: ${data.ability}`);
           }
-          const [isValid, validation] = await validateAbility(player.sheet, data.ability);
-          sendAbilityFB({
-            isValid: isValid,
-            feedback: validation ?
-              validation :
-              "This ability conflicts with your existing abilities."
-          }, peerId);
-          // TODO: As soon as we know it's valid, we should be able to resolve
-          // the player's promise. However, it is currently unsafe to do this
-          // because that same promise is also ensuring all pre-combat LLM
-          // generations have finished. Rework this.
-          if (!isValid) {
-            this.inProgress.delete(peerId);
-            return;
+          // If a fallback ability is suggested, use that instead of validation.
+          if (data.useFallback) {
+            player.sheet.strengths.push(await fallbackAbility(player.sheet));
+            sendAbilityFB({
+              isValid: true,
+              feedback: "We chose an ability for you."
+            }, peerId);
           } else {
+            const [isValid, validation] = await validateAbility(player.sheet, data.ability);
+            sendAbilityFB({
+              isValid: isValid,
+              feedback: validation ?
+                validation :
+                "This ability conflicts with your existing abilities."
+            }, peerId);
+            if (!isValid) {
+              this.inProgress.delete(peerId);
+              return;
+            }
             player.sheet.strengths.push(data.ability);
-            // Only add a complimentary weakness if it isn't already there.
-            if (player.sheet.strengths.length > player.sheet.weaknesses.length) {
-              player.sheet.weaknesses.push(await balanceAbility(player.sheet, data.ability, true));
-            }
-            player.sheet.level = state.round;
-            player.sheet.className = await generateClass(player.sheet);
-
-            // Wait until all required sheet components have generated before resolving.
-            const resolver = promises.playersResolve.get(peerId);
-            if (!resolver) {
-              throw Error(`No pending ability promise found for peerId: ${peerId}`);
-            }
-            // NOTE: Pushing this should ensure that battles are usually
-            // resolved in the order of the list, for faster roundBattle logic.
-            promises.battles.push(combat(player.sheet, state.enemies[state.round - 1]));
-
-            // Resolve the promise so game logic knows this player is ready.
-            resolver();
           }
+          // Only add a complimentary weakness if it isn't already there.
+          if (player.sheet.strengths.length > player.sheet.weaknesses.length) {
+            player.sheet.weaknesses.push(await balanceAbility(player.sheet, data.ability, true));
+          }
+          player.sheet.level = state.round;
+          player.sheet.className = await generateClass(player.sheet);
+
+          // Wait until all required sheet components have generated before resolving.
+          const resolver = promises.playersResolve.get(peerId);
+          if (!resolver) {
+            throw Error(`No pending ability promise found for peerId: ${peerId}`);
+          }
+          // NOTE: Pushing this should ensure that battles are usually
+          // resolved in the order of the list, for faster roundBattle logic.
+          promises.battles.push(combat(player.sheet, state.enemies[state.round - 1]));
+
+          // Resolve the promise so game logic knows this player is ready.
+          resolver();
         } catch (error) {
           console.error(error);
         }
@@ -105,6 +109,16 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           }
           if (data.isValid) {
             console.log("Ability accepted!");
+            const taskElement = document.createElement('p');
+            taskElement.textContent = `Ability accepted!`;
+            elements.client.messages.appendChild(taskElement);
+            // Clear the text after 5 seconds.
+            setTimeout(() => {
+              if (elements.client.messages.contains(taskElement)) {
+                elements.client.messages.removeChild(taskElement);
+              }
+            }, 5000);
+
             elements.client.sheet.style.display = "none";
             return;
           }
@@ -117,11 +131,12 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
     }
     private isAbilityData(data: any): data is AbilityData {
       return (
-        typeof data === "object" &&
-        data !== null &&
-        "ability" in data &&
-        typeof data.ability === "string" &&
-        data.ability.length > 0
+        typeof data === "object" && data !== null &&
+        "ability" in data && typeof data.ability === "string" &&
+        (
+          (data.ability.length > 0) ||
+          ("useFallback" in data && typeof data.useFallback === "boolean")
+        )
       );
     }
     private isAbilityFBData(data: any): data is AbilityFBData {

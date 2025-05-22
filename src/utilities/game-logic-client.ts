@@ -69,6 +69,8 @@ export async function connect() {
     throw Error(`Invalid room code: ${room}`);
   }
 
+  // TODO: Warn, maybe even retry, if a host cannot be found at this point.
+
   // Provide a name.
   elements.client.nameDiv.style.display = "inline";
   function nameSender() {
@@ -123,13 +125,17 @@ export async function roundAbilities() {
   // Notify the player that it is time to enter an ability.
   notify();
 
-  function abilitySender() {
-    const ability = elements.client.abilityInput.value.trim();
+  function abilitySender(useFallback: boolean = false) {
+    if (useFallback) {
+      rtc.sendAbility({ ability: "", useFallback: true }, state.hostId);
+    } else {
+      const ability = elements.client.abilityInput.value.trim();
 
-    // Ignore empty ability submissions.
-    if (!ability || ability === "") { return; }
+      // Ignore empty ability submissions.
+      if (!ability || ability === "") { return; }
 
-    rtc.sendAbility({ ability: ability }, state.hostId);
+      rtc.sendAbility({ ability: ability, useFallback: false }, state.hostId);
+    }
 
     elements.client.feedback.innerText = "";
     elements.client.abilityInput.value = "";
@@ -140,11 +146,14 @@ export async function roundAbilities() {
   // Please enter a new ability for your character:
   elements.client.abilityDiv.style.display = "inline";
   elements.client.submitAbility.onclick = () => {
-    abilitySender();
+    abilitySender(false);
+  };
+  elements.client.submitAbilityFallback.onclick = () => {
+    abilitySender(true);
   };
   elements.client.abilityInput.onkeydown = (event) => {
     if (event.key === "Enter") {
-      abilitySender();
+      abilitySender(false);
     }
   };
 

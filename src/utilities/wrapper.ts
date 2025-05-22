@@ -22,6 +22,9 @@ function wrapFunction(
     if (customHandler && customHandler.running) {
       taskElement.textContent = customHandler.running(args);
     } else {
+      // NOTE: Minified JavaScript will change the function's name. Better to
+      // use custom overrides for all of these messages, since they are
+      // displayed to users anyway.
       taskElement.textContent = `Running: ${fn.name}`;
     }
 
@@ -60,9 +63,26 @@ function wrapFunction(
   };
 }
 
-export const isStrength = wrapFunction(prompts.isStrength);
-export const balanceAbility = wrapFunction(prompts.balanceAbility);
-export const generateClass = wrapFunction(prompts.generateClass);
+export const isStrength = wrapFunction(prompts.isStrength, {
+  running: (args: any[]) => `Determining if ${args[0].name} provided a strength`,
+  finished: (result: any) => `Ability type identified`,
+  error: (error: any) => `Failed to determine if a strength was provided: ${error}`
+});
+export const balanceAbility = wrapFunction(prompts.balanceAbility, {
+  running: (args: any[]) => `Generating a balance ability for ${args[0].name}`,
+  finished: (result: any) => `Generated a balance ability name`,
+  error: (error: any) => `Failed to generate a balance ability name: ${error}`
+});
+export const generateClass = wrapFunction(prompts.generateClass, {
+  running: (args: any[]) => `Generating a suitable class name for ${args[0].name}`,
+  finished: (result: any) => `Generated a suitable class name`,
+  error: (error: any) => `Failed to generate a suitable class name: ${error}`
+});
+export const fallbackAbility = wrapFunction(prompts.fallbackAbility, {
+  running: (args: any[]) => `Generating fallback ability for ${args[0].name}`,
+  finished: () => `Generated a fallback ability`,
+  error: (error: any) => `Failed to generate a fallback ability: ${error}`
+});
 export const validateAbility = wrapFunction(prompts.validateAbility, {
   running: (args: any[]) => `Validating ${args[0].name}'s provided ability`,
   finished: (result: any) => `Ability is ${result[0][0] ? "not valid" : "valid "}`,
@@ -78,4 +98,8 @@ export const generateEnemy = wrapFunction(prompts.generateEnemy, {
   finished: (result: any) => `Generated a level ${result.level} enemy`,
   error: (error: any) => `Failed to generate an enemy: ${error}`
 });
-export const genBattleRoyale = wrapFunction(prompts.genBattleRoyale);
+export const genBattleRoyale = wrapFunction(prompts.genBattleRoyale, {
+  running: (args: any[]) => `Generating final battle royale`,
+  finished: (result: any) => `Generated final battle royale`,
+  error: (error: any) => `Failed to generate final battle royale: ${error}`
+});

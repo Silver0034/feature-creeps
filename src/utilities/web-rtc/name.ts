@@ -71,6 +71,15 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
           }
           if (data.isValid) {
             console.log("Name accepted!");
+            const taskElement = document.createElement('p');
+            taskElement.textContent = `Name accepted!`;
+            elements.client.messages.appendChild(taskElement);
+            // Clear the text after 5 seconds.
+            setTimeout(() => {
+              if (elements.client.messages.contains(taskElement)) {
+                elements.client.messages.removeChild(taskElement);
+              }
+            }, 5000);
             // Add player name to the top of the screen.
             elements.client.name.innerText = `Name: ${data.name}`;
             return;

@@ -17,6 +17,7 @@ export let elements = {
     roomCode: document.getElementById("roomCode") as HTMLInputElement,
     goButton: document.getElementById("goButton") as HTMLButtonElement,
     leaderboardText: document.getElementById("leaderboardText") as HTMLElement,
+    playersStatus: document.getElementById("playersStatus") as HTMLElement,
     loadStatus: document.getElementById("loadStatus") as HTMLElement,
     options: {
       skipIntro: document.getElementById("skipIntro") as HTMLInputElement,
@@ -48,6 +49,8 @@ export let elements = {
     submitName: document.getElementById("submitName") as HTMLButtonElement,
     abilityInput: document.getElementById("abilityInput") as HTMLInputElement,
     submitAbility: document.getElementById("submitAbility") as HTMLButtonElement,
+    submitAbilityFallback: document.getElementById("submitAbilityFallback") as HTMLButtonElement,
+    messages: document.getElementById("messages") as HTMLElement,
   },
 }
 
