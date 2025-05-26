@@ -1,6 +1,7 @@
 import * as AsyncLock from "async-lock";
 import { elements } from "@utilities/elements";
 import { notify } from "@utilities/game-logic-client";
+import { setPlayerStatus } from "@utilities/players-list";
 import { state, GameState, Role } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 
@@ -40,10 +41,9 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
             const validationError = this.validateName(data.name);
             if (!validationError) {
               player.sheet.name = data.name;
-              elements.host.playerCount.textContent =
-                (parseInt(elements.host.playerCount.innerText) + 1)
-                  .toString();
+              setPlayerStatus(player, "Joined!");
             } else {
+              setPlayerStatus(player, "Submitted an invalid name.");
               console.warn(`Name validation failed for ${data.name}: ${validationError}`);
             }
             sendNameFB({
@@ -133,7 +133,7 @@ export function nameMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TB
       elements.client.feedback.innerText = `Invalid name: ${feedback}`;
 
       // Re-enable name form in the GUI.
-      elements.client.nameDiv.style.display = "inline";
+      elements.client.nameDiv.style.display = "block";
 
       // Make sure the user knows that they need to revise their name.
       notify();

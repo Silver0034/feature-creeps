@@ -16,11 +16,24 @@ export enum GameState {
   End
 }
 
+// Player states:
+// TODO: Consider making this an enum with a string mapping.
+// -Lost Connection.
+// Reconnected!
+// -New player connected! Entering a name.
+// -Joined!
+// -Submitted an invalid name.
+// -Entering an ability.
+// -Submitted an ability!
+// -Ability accepted!
+// -Ability rejected. Please try again.
+
 export enum Role {
   Unset,
   Host,
   Client,
-  Audience
+  Audience,
+  Kicked
 }
 
 interface State {
@@ -112,8 +125,6 @@ export let state: State = {
 
 export function saveGame(): void {
   console.log('Saving game.')
-  // TODO: At some point, support resuming an existing game.
-  // In the interim, just use this to save and restore options.
   localStorage.setItem('gameSave', JSON.stringify(state.options))
   console.log('Saved!')
 }
@@ -126,8 +137,6 @@ export async function loadGame(): Promise<boolean> {
       return false;
     }
     state.options = JSON.parse(savedData);
-    // TODO: If we include connection info in the game state,
-    // then we may need clear them and redo the connection process.
     console.log('Game loaded successfully from local storage.', state);
 
     return true;

@@ -6,20 +6,22 @@ import { selfId } from "trystero/mqtt";
 import type { CharacterSheet } from "@utilities/character-sheet";
 import { elements, validateElements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
+import { setPlayerStatus, syncPlayerStatus } from "@utilities/players-list";
 import { promises } from "@utilities/promises"
-import { generateEnemy, genBattleRoyale } from "@utilities/wrapper";
-import { state, GameState, Role, saveGame, loadGame } from "@utilities/state";
+import { state, GameState, Role, saveGame, loadGame, type PlayerData } from "@utilities/state";
 import { tts, initTts, longSpeak } from "@utilities/tts";
+import { generateEnemy, genBattleRoyale } from "@utilities/wrapper";
 
 import { WebRTC } from "@utilities/web-rtc";
 import { abilityMixin } from "@utilities/web-rtc/ability";
+import { kickMixin } from "@utilities/web-rtc/kick";
 import { messageMixin } from "@utilities/web-rtc/message";
 import { nameMixin } from "@utilities/web-rtc/name";
 import { serverMixin } from "@utilities/web-rtc/server";
 import { sheetMixin } from "@utilities/web-rtc/sheet";
 import { updateMixin } from "@utilities/web-rtc/update";
 
-const WebRTCServer = abilityMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC))))));
+const WebRTCServer = abilityMixin(kickMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC)))))));
 let rtc: InstanceType<typeof WebRTCServer>;
 
 // Constants for valid options.
@@ -49,13 +51,10 @@ export async function main(): Promise<void> {
 
   validateElements();
 
-  // TODO: If we have a game in progress, restore to the appropriate game state. Ensure clients reset to that state as well. The current round must be reset because we never store battle outputs in the state, just the character sheets. We will also need to announce our new peerId to the swarm.
   // If we unwind from all called functions, go back to game start every time.
   await runStateLogic(GameState.Init);
 }
 
-// TODO: This is a good function to save state in.
-// Figure out where it is safe to do so.
 export async function runStateLogic(newState?: GameState) {
   // State change can be specified here, by argument, or set externally before
   // calling this function.
@@ -91,7 +90,6 @@ export async function runStateLogic(newState?: GameState) {
       // Make sure the next enemy is ready to go.
       const enemy = await promises.enemies[state.round - 1];
       state.enemies.push(enemy);
-      // TODO: Save state before starting a round.
     }
     // Notify clients of state change.
     if (rtc) rtc.sendUpdate({ state: state.gameState });
@@ -209,7 +207,18 @@ async function connect() {
   // Wait for start button to be hit.
   elements.host.goButton.onclick = async () => {
     // Toss any incomplete character sheets.
-    state.players = state.players.filter(player => player.sheet.name !== "Unknown");
+    state.players = state.players.filter(player => {
+      if (player.sheet.name === "Unknown") {
+        // Notify the player that they've been kicked, and set their client to
+        // discard all messages.
+        rtc.sendKick({ reason: "Missing name!" }, player.peerId);
+        return false;
+      }
+      return true;
+    });
+    elements.host.playerCount.textContent = state.players.length.toString();
+    syncPlayerStatus();
+
     await runStateLogic(GameState.Intro);
   };
 }
@@ -258,8 +267,11 @@ async function roundAbilities() {
   // https://stackoverflow.com/questions/73389954/how-to-sync-html5-audio-across-browsers
   // TODO: Add a “safety quip” fallback is a user doesn’t answer in time.
 
+  for (const player of state.players) {
+    setPlayerStatus(player, "Entering an ability.");
+  }
+
   // Request new abilities from players.
-  // TODO: Point out last players that need to decide abilities, on-screen.
   await Promise.all(promises.players);
 
   if (state.round == state.options.numRounds) {
@@ -351,7 +363,7 @@ async function battleRoyale() {
 }
 
 async function leaderboard() {
-  // TODO: Show scoreboard on screen.
+  // Show scoreboard on screen.
   function getScoreboardText(): string {
     let scoreboardText: string = "Leaderboard:";
     const leaderboard = state.players.map((player) => player.sheet).slice().sort((a, b) => b.wins - a.wins);
@@ -376,7 +388,6 @@ async function end() {
   state.players = [];
   state.enemies = [];
 
-  // TODO: Add reset game without refreshing page
   // TODO: Add ability to restart with same group.
 
   // Go back to init.
@@ -386,7 +397,6 @@ async function end() {
   state.gameState = GameState.Init;
 }
 
-// TODO: Storytellers with different personalities and voices?
 async function options() {
   let models: any[] = [];
 
@@ -566,7 +576,6 @@ async function options() {
     const parsedRounds = parseInt(elements.host.options.numRounds.value);
     if (parsedRounds >= VALID_OPTIONS.minRounds) {
       state.options.numRounds = parsedRounds;
-      // TODO: On-screen warning.
     }
 
     // Reload LLM if these changed.
@@ -582,7 +591,6 @@ async function options() {
     const parsedTemperature = parseFloat(elements.host.options.temperature.value);
     if (0 <= parsedTemperature && parsedTemperature >= 2) {
       state.options.inference.temperature = parsedTemperature;
-      // TODO: On-screen warning.
     }
     state.options.inference.apiURL = elements.host.options.inferenceApiUrl.value;
     state.options.inference.apiKey = elements.host.options.inferenceApiKey.value;

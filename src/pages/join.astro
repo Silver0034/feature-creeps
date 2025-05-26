@@ -12,17 +12,15 @@
 <p id="name"></p>
 <p id="feedback" aria-live="assertive"></p>
 
-<br />
-
 <div id="roomDiv" style="display:none;">
+  <br />
   <label for="roomId">Room Code:</label>
   <input type="text" id="roomId" size="10" />
   <button id="submitRoomId">Submit</button>
 </div>
 
-<br />
-
 <div id="nameDiv" style="display:none;">
+  <br />
   <label for="nameInput">Name:</label>
   <input type="text" id="nameInput" size="20" />
   <button id="submitName">Submit</button>
@@ -31,18 +29,26 @@
   <button id="optionsButton">Options</button>
 </div>
 
-<br />
+<div id="connectDiv" style="display:none;">
+  <br />
+  <button id="startGame" class="vip">Start Game</button>
+</div>
+
+<div id="introDiv" style="display:none;">
+  <br />
+  <button id="skipInto" class="vip">Skip Intro</button>
+</div>
 
 <div id="abilityDiv" style="display:none;">
+  <br />
   <label for="abilityInput">Ability:</label>
   <input type="text" id="abilityInput" size="20" />
   <button id="submitAbility">Submit</button>
   <button id="submitAbilityFallback">I'm Feeling Lucky</button>
 </div>
 
-<br />
-
 <div id="optionsDiv" style="display:none;">
+  <br />
   <p>Options Menu:</p>
   <label>
     <input type="checkbox" id="soundEffects" />
@@ -52,12 +58,13 @@
   <br />
   <label>
     <input type="checkbox" id="vibrate" />
-    Vibrate on prompt
+    Vibrate on prompt (only works for Chromium-based browsers)
   </label>
   <button id="testVibrate">Test Vibrate</button>
   <br />
   <button id="saveConfig">Save</button>
 </div>
 
+<br />
 <p id="sheet"></p>
 <div id="messages"></div>

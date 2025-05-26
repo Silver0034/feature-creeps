@@ -14,6 +14,7 @@ export function updateMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
     private registerUpdateActions(): void {
       const [sendUpdate, getUpdate] = this.room.makeAction<UpdateData>("update");
       this.sendUpdate = sendUpdate;
+      // TODO: Maybe this is a good place to have the VIP update the server?
       getUpdate(async (data, peerId) => {
         try {
           if (!this.isUpdateData(data)) {
@@ -35,7 +36,7 @@ export function updateMixin<TBase extends new (...args: any[]) => WebRTC>(Base: 
           // elements.gameState.textContent = GameState[state.gameState];
 
           // Clients call their relevant methods from here.
-          if (state.role = Role.Client) {
+          if (state.role == Role.Client) {
             switch (state.gameState) {
               // Options state is never and should never be sent to clients.
               // case GameState.Options: { await client.options(); break; }

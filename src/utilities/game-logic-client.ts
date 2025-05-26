@@ -5,6 +5,7 @@ import { state, GameState, Role, saveGame, loadGame } from "@utilities/state";
 
 import { WebRTC } from "@utilities/web-rtc";
 import { abilityMixin } from "@utilities/web-rtc/ability";
+import { kickMixin } from "@utilities/web-rtc/kick";
 import { messageMixin } from "@utilities/web-rtc/message";
 import { nameMixin } from "@utilities/web-rtc/name";
 import { serverMixin } from "@utilities/web-rtc/server";
@@ -13,7 +14,7 @@ import { updateMixin } from "@utilities/web-rtc/update";
 
 // NOTE: Clients change state to match the server, via getUpdate().
 
-const WebRTCClient = abilityMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC))))));
+const WebRTCClient = abilityMixin(kickMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC)))))));
 let rtc: InstanceType<typeof WebRTCClient>;
 
 let queryStrings: Record<string, string | null>;
@@ -21,6 +22,9 @@ let queryStrings: Record<string, string | null>;
 function updateStateElement(gameState?: GameState) {
   if (gameState) {
     state.gameState = gameState;
+  }
+  if (state.gameState != GameState.Intro) {
+    elements.client.introDiv.style.display = "none";
   }
   elements.gameState.textContent = GameState[state.gameState];
 }
@@ -82,7 +86,7 @@ export async function connect() {
 
   if (!room) {
     // Provide a room code.
-    elements.client.roomDiv.style.display = "inline";
+    elements.client.roomDiv.style.display = "block";
     await new Promise<void>((resolve) => {
       elements.client.submitRoomId.onclick = () => {
         room = elements.client.roomId.value.trim();
@@ -106,10 +110,7 @@ export async function connect() {
     throw Error(`Invalid room code: ${room}`);
   }
 
-  // TODO: Warn, maybe even retry, if a host cannot be found at this point.
-
   // Provide a name.
-  elements.client.nameDiv.style.display = "inline";
   function nameSender() {
     const input = elements.client.nameInput.value.trim();
     if (!input) {
@@ -137,26 +138,28 @@ export async function connect() {
 
   // TODO: Provide a selection of character portraits and sounds.
 
-  // TODO: Press the start button.
-  // TODO: Make a skip mixin.
   if (state.vipId == selfId) {
-
+    elements.client.startGame.onclick = async () => {
+      // TODO: Set up a mixin to instruct the server to start the game from here.
+    };
   }
 }
 
 export async function intro() {
   updateStateElement();
-  // TODO: Skip intro.
-  // TODO: Will require a way to kill TTS playback early.
   if (state.vipId == selfId) {
-
+    elements.client.skipInto.onclick = async () => {
+      // TODO: Skip intro.
+      // TODO: Make a skip mixin.
+      // TODO: Will require a way to kill TTS playback early.
+    };
+    elements.client.introDiv.style = "block";
   }
 }
 
 export async function roundAbilities() {
   updateStateElement();
   // Show current player sheet.
-  // TODO: Show on screen.
   console.log(state.players.find((player) => player.peerId == selfId)?.sheet.toString());
 
   // Notify the player that it is time to enter an ability.
@@ -181,7 +184,7 @@ export async function roundAbilities() {
 
   // LEVEL UP!
   // Please enter a new ability for your character:
-  elements.client.abilityDiv.style.display = "inline";
+  elements.client.abilityDiv.style.display = "block";
   elements.client.submitAbility.onclick = () => {
     abilitySender(false);
   };
@@ -196,9 +199,6 @@ export async function roundAbilities() {
 
   // NOTE: May getAbilityFB() if this ability doesn't pass LLM validation.
   // May have to send one in multiple times.
-
-  // TODO: Consider an LLM-generated fallback if the player can't figure out an
-  // ability in time.
 }
 
 export async function roundBattle() {
@@ -221,6 +221,7 @@ export async function end() {
   state.round = 0;
   state.players = [];
   state.enemies = [];
+  saveGame();
 
   // NOTE: Sit here forever, as the room code will no longer be valid for reuse.
 }
@@ -257,5 +258,5 @@ export async function notify() {
 
 export async function updateSheet(sheet: CharacterSheet) {
   elements.client.sheet.innerText = sheet.toString();
-  elements.client.sheet.style.display = "inline";
+  elements.client.sheet.style.display = "block";
 }

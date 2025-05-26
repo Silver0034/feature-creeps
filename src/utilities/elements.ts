@@ -43,16 +43,18 @@ export let elements = {
     roomId: document.getElementById("roomId") as HTMLInputElement,
     submitRoomId: document.getElementById("submitRoomId") as HTMLButtonElement,
     nameDiv: document.getElementById("nameDiv") as HTMLInputElement,
-    abilityDiv: document.getElementById("abilityDiv") as HTMLInputElement,
     nameInput: document.getElementById("nameInput") as HTMLInputElement,
     submitName: document.getElementById("submitName") as HTMLButtonElement,
     optionsButton: document.getElementById("optionsButton") as HTMLButtonElement,
+    connectDiv: document.getElementById("connectDiv") as HTMLInputElement,
+    startGame: document.getElementById("startGame") as HTMLButtonElement,
+    introDiv: document.getElementById("introDiv") as HTMLInputElement,
+    skipInto: document.getElementById("skipInto") as HTMLButtonElement,
+    abilityDiv: document.getElementById("abilityDiv") as HTMLInputElement,
     abilityInput: document.getElementById("abilityInput") as HTMLInputElement,
     submitAbility: document.getElementById("submitAbility") as HTMLButtonElement,
     submitAbilityFallback: document.getElementById("submitAbilityFallback") as HTMLButtonElement,
     optionsDiv: document.getElementById("optionsDiv") as HTMLInputElement,
-    sheet: document.getElementById("sheet") as HTMLElement,
-    messages: document.getElementById("messages") as HTMLElement,
     options: {
       soundEffects: document.getElementById("soundEffects") as HTMLInputElement,
       testSoundEffects: document.getElementById("testSoundEffects") as HTMLButtonElement,
@@ -60,6 +62,8 @@ export let elements = {
       testVibrate: document.getElementById("testVibrate") as HTMLButtonElement,
       saveConfig: document.getElementById("saveConfig") as HTMLButtonElement,
     },
+    sheet: document.getElementById("sheet") as HTMLElement,
+    messages: document.getElementById("messages") as HTMLElement,
   },
 }
 
@@ -86,7 +90,7 @@ function validate(elements: { [key: string]: unknown }) {
       // If the element is an object, recursively validate its properties
       validate(element as { [key: string]: unknown });
     } else {
-      console.log(`Missing ${element}`);
+      console.error(`Missing ${element}`);
     }
   });
 }

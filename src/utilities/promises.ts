@@ -34,7 +34,6 @@ export let promises: PromisesInterface = {
     tts: undefined,
 
     // These promises enable communication with WebRTC mixins.
-    // TODO: Use this style: https://chatgpt.com/c/67d295c1-cd34-8010-8d58-42abc1801685
     players: [] as Promise<void>[],
     playersResolve: new Map<string, (value?: void) => void>(),
 }

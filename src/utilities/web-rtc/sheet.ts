@@ -30,7 +30,6 @@ export function sheetMixin<TBase extends new (...args: any[]) => WebRTC>(Base: T
           // Update player sheet.
           const player = state.players.find(player => player.peerId === data.peerId);
           if (!player) {
-            // TODO: No secret may be a problem here. We don't use the field for now though.
             state.players.push({
               sheet: sheet,
               secret: "",

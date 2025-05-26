@@ -103,7 +103,7 @@ export async function balanceAbility(
     messages: [
       {
         'role': 'system',
-        'content': `You are an expert in designing balanced character abilities. For each strength or weakness given, your task is to generate a corresponding weakness or strength of equal power level. The strength should be a notable advantage, while the weakness should be a significant disadvantage. The strengths and weaknesses generally should not be directly related, but they must be of equivalent impact on the character’s overall capabilities. The output should be formatted as JSON. If a strength was provided, a weakness in a field named "Weakness" should be provided. Likewise, if a weakness was provided, a strength in a field named "Strength" should be provided.
+        'content': `You are an expert in designing balanced character abilities. For each strength or weakness given, your task is to generate a corresponding weakness or strength of equal power level. The strength should be a notable advantage, while the weakness should be a significant disadvantage. The strengths and weaknesses generally should not be directly related, but they MUST be of equivalent impact on the character’s overall capabilities. The output should be formatted as JSON. If a strength was provided, a weakness in a field named "Weakness" should be provided. Likewise, if a weakness was provided, a strength in a field named "Strength" should be provided.
 
 Instructions:
 1. When Given a Strength: Generate a weakness that matches the strength in terms of how it impacts the character's abilities, balancing the overall power. The weakness should present a substantial challenge to the character, hindering them in a way that offsets the benefit of their strength.
@@ -156,12 +156,14 @@ Weakness: Social Pariah
 Strength: Reality Manipulation
 Weakness: Random Amnesia
 
-Keep the ability brief and avoid abilities that overlap or conflict with the existing character sheet:
+Keep the ability brief and avoid abilities that overlap or conflict with the existing character sheet.
+
+Current character sheet:
 ${character.toString()}`,
       },
       {
         'role': 'user',
-        'content': `${isStrength ? "Strength" : "Weakness"}: ${ability}`
+        'content': `Newly-provided ${isStrength ? "Strength" : "Weakness"}: ${ability}`
       }
     ]
   });

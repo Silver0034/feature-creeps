@@ -1,10 +1,11 @@
 import * as AsyncLock from "async-lock";
 import { elements } from "@utilities/elements";
 import { notify } from "@utilities/game-logic-client";
+import { setPlayerStatus } from "@utilities/players-list";
 import { promises } from "@utilities/promises";
-import { validateAbility, fallbackAbility, balanceAbility, generateClass, combat } from "@utilities/wrapper";
 import { GameState, Role, state } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
+import { validateAbility, fallbackAbility, balanceAbility, generateClass, combat } from "@utilities/wrapper";
 
 type AbilityData = { ability: string, useFallback: boolean };
 type AbilityFBData = { isValid: boolean, feedback: string };
@@ -52,12 +53,14 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           }
           // If a fallback ability is suggested, use that instead of validation.
           if (data.useFallback) {
+            setPlayerStatus(player, "Ability accepted!");
             player.sheet.strengths.push(await fallbackAbility(player.sheet));
             sendAbilityFB({
               isValid: true,
               feedback: "We chose an ability for you."
             }, peerId);
           } else {
+            setPlayerStatus(player, "Ability submitted.");
             const [isValid, validation] = await validateAbility(player.sheet, data.ability);
             sendAbilityFB({
               isValid: isValid,
@@ -67,8 +70,10 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
             }, peerId);
             if (!isValid) {
               this.inProgress.delete(peerId);
+              setPlayerStatus(player, "Ability rejected. Please try again!");
               return;
             }
+            setPlayerStatus(player, "Ability accepted!");
             player.sheet.strengths.push(data.ability);
           }
           // Only add a complimentary weakness if it isn't already there.
@@ -156,7 +161,7 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
       elements.client.feedback.innerText = `Invalid ability: ${feedback}`;
 
       // Re-enable ability form in the GUI.
-      elements.client.abilityDiv.style.display = "inline";
+      elements.client.abilityDiv.style.display = "block";
 
       // Make sure the user knows that they need to revise their answer.
       notify();
