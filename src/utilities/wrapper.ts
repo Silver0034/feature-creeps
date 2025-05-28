@@ -65,17 +65,17 @@ function wrapFunction(
 
 export const isStrength = wrapFunction(prompts.isStrength, {
   running: (args: any[]) => `Determining if ${args[0].name} provided a strength`,
-  finished: (result: any) => `Ability type identified`,
+  finished: (_: any) => `Ability type identified`,
   error: (error: any) => `Failed to determine if a strength was provided: ${error}`
 });
 export const balanceAbility = wrapFunction(prompts.balanceAbility, {
   running: (args: any[]) => `Generating a balance ability for ${args[0].name}`,
-  finished: (result: any) => `Generated a balance ability name`,
+  finished: (_: any) => `Generated a balance ability name`,
   error: (error: any) => `Failed to generate a balance ability name: ${error}`
 });
 export const generateClass = wrapFunction(prompts.generateClass, {
   running: (args: any[]) => `Generating a suitable class name for ${args[0].name}`,
-  finished: (result: any) => `Generated a suitable class name`,
+  finished: (_: any) => `Generated a suitable class name`,
   error: (error: any) => `Failed to generate a suitable class name: ${error}`
 });
 export const fallbackAbility = wrapFunction(prompts.fallbackAbility, {
@@ -99,7 +99,7 @@ export const generateEnemy = wrapFunction(prompts.generateEnemy, {
   error: (error: any) => `Failed to generate an enemy: ${error}`
 });
 export const genBattleRoyale = wrapFunction(prompts.genBattleRoyale, {
-  running: (args: any[]) => `Generating final battle royale`,
-  finished: (result: any) => `Generated final battle royale`,
+  running: (_: any[]) => `Generating final battle royale`,
+  finished: (_: any) => `Generated final battle royale`,
   error: (error: any) => `Failed to generate final battle royale: ${error}`
 });

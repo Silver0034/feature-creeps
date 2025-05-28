@@ -10,11 +10,12 @@ import { messageMixin } from "@utilities/web-rtc/message";
 import { nameMixin } from "@utilities/web-rtc/name";
 import { serverMixin } from "@utilities/web-rtc/server";
 import { sheetMixin } from "@utilities/web-rtc/sheet";
+import { timesyncMixin } from "@utilities/web-rtc/timesync";
 import { updateMixin } from "@utilities/web-rtc/update";
 
 // NOTE: Clients change state to match the server, via getUpdate().
 
-const WebRTCClient = abilityMixin(kickMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC)))))));
+const WebRTCClient = abilityMixin(kickMixin(messageMixin(nameMixin(serverMixin(sheetMixin(timesyncMixin(updateMixin(WebRTC))))))));
 let rtc: InstanceType<typeof WebRTCClient>;
 
 let queryStrings: Record<string, string | null>;
@@ -147,6 +148,10 @@ export async function connect() {
 
 export async function intro() {
   updateStateElement();
+
+  // Set up the TimeSync.
+  rtc.updatePeersList();
+
   if (state.vipId == selfId) {
     elements.client.skipInto.onclick = async () => {
       // TODO: Skip intro.

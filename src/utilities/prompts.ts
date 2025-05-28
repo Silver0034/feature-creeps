@@ -311,62 +311,7 @@ export async function generateEnemy(level: number): Promise<CharacterSheet> {
   // TODO: Allow players (and the audience) to provide enemy suggestions.
   // I have a massive fallback list to use by default.
   const theme = getRandomTheme();
-
   // TODO: Final boss monster should take existing player abilities into account and create something specifically designed to counter as many players as possible.
-  const blightfang = Object.assign(new CharacterSheet(), {
-    name: 'The Blightfang',
-    className: 'Poison Drake',
-    level: 5,
-    strengths: [
-      'Venomous bite that deals damage over time',
-      'Tough, scaled hide that reduces physical damage',
-      'Can emit a cloud of poison gas in a small radius'
-    ],
-    weaknesses: [
-      'Vulnerable to cold-based attacks',
-      'Slow in enclosed spaces, reducing agility'
-    ]
-  });
-  const vorlok = Object.assign(new CharacterSheet(), {
-    name: 'Vorlok, Devourer of Stars',
-    className: 'Cosmic Titan',
-    level: 18,
-    strengths: [
-      'Can manipulate gravity to crush enemies or slow their movement',
-      'Immune to all non-magical attacks',
-      'Regenerates health rapidly in starlight',
-      'Capable of firing energy beams that pierce through magical barriers'
-    ],
-    weaknesses: ['Weak to intense gravity']
-  });
-  const microwave = Object.assign(new CharacterSheet(), {
-    name: 'Microwave Disaster',
-    className: 'Food Explosion',
-    level: 3,
-    strengths: [
-      'Emits powerful microwaves',
-      'Contaminates its enemies with a horrid goo'
-    ],
-    weaknesses: [
-      'Powerless (yet still disgusting) when unplugged',
-      'Weak to cleaning supplies'
-    ]
-  });
-  const alastor = Object.assign(new CharacterSheet(), {
-    name: 'Alastor the Adventurer',
-    className: 'Knight',
-    level: 10,
-    strengths: [
-      'Trained in swordsmanship',
-      'Brave',
-      'Honorable'
-    ],
-    weaknesses: [
-      'Self-absorbed',
-      'Headstrong',
-      'Follows a rigid code of ethics, avoiding dirty paths to victory'
-    ]
-  });
   const generic = Object.assign(new CharacterSheet(), {
     name: '[Adversary Name]',
     className: '[Class or Species]',
@@ -384,7 +329,7 @@ export async function generateEnemy(level: number): Promise<CharacterSheet> {
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: state.options.inference.temperature,
-    response_format: formatResponse(CharacterSheet.getSchema(adjustedLevel, level)),
+    response_format: formatResponse(CharacterSheet.getSchema(adjustedLevel)),
     stop: "<|end|>",
     messages: [
       {

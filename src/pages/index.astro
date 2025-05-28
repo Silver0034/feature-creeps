@@ -8,9 +8,11 @@
   await main();
 </script>
 
-<img src="logo.svg" width="200px">
+<!-- TODO: Logo displays properly only if the required fonts are installed. -->
+<img src="logo.svg" width="200px" />
 <p>Server</p>
 <p>Game State: <span id="gameState"></span></p>
+<p>Timer: <span id="timer"></span></p>
 <p>Room Code: <span id="roomCode">------</span></p>
 <div id="joinDiv" style="display:none;">
   <span>Go to <a id="joinLink" target="_blank"></a> to join!</span>
@@ -18,6 +20,7 @@
   <svg id="roomQr" width="256" height="256" style="display:none;"></svg>
 </div>
 <br />
+
 <div id="Options" style="display:none;">
   <p>Options Menu:</p>
   <div id="vramUsage">
@@ -98,7 +101,6 @@
   <p>Wait for all players to join, then press "Start Game".</p>
   <p>Players Joined: <span id="playerCount">0</span></p>
   <button id="goButton">Start Game</button>
-  <!-- TODO: Countdown and cancel button, like Jackbox. -->
 </div>
 <div id="Intro" style="display:none;"></div>
 <div id="RoundAbilities" style="display:none;"></div>
@@ -108,6 +110,7 @@
   <p id="leaderboardText"></p>
 </div>
 <div id="End" style="display:none;"></div>
+
 <br />
 <p id="enemy"></p>
 <p id="player"></p>

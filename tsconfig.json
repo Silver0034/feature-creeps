@@ -9,6 +9,7 @@
       "@pages/*": ["src/pages/*"],
       "@styles/*": ["src/styles/*"],
       "@utilities/*": ["src/utilities/*"]
-    }
+    },
+    "typeRoots": ["./src/types", "./node_modules/@types"]
   }
 }

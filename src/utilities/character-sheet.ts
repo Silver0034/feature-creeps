@@ -38,7 +38,7 @@ Weaknesses:
 ${weaknessesStr}`
 	}
 
-	static getSchema(level: number, numAbilities: number): object {
+	static getSchema(level: number): object {
 		// NOTE: The local inference engine only supports a subset of the
 		// required schema features. As a result, we cannot use minItems or
 		// const. This may generate slightly different character sheets than we

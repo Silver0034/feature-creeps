@@ -82,6 +82,20 @@
         "Follows a rigid code of ethics, avoiding dirty paths to victory",
       ],
     });
+    const blightfang = Object.assign(new CharacterSheet(), {
+      name: "The Blightfang",
+      className: "Poison Drake",
+      level: 5,
+      strengths: [
+        "Venomous bite that deals damage over time",
+        "Tough, scaled hide that reduces physical damage",
+        "Can emit a cloud of poison gas in a small radius",
+      ],
+      weaknesses: [
+        "Vulnerable to cold-based attacks",
+        "Slow in enclosed spaces, reducing agility",
+      ],
+    });
 
     const isStrengthPromise = isStrength(vorlok, ability);
     const balanceAbilityPromise = balanceAbility(vorlok, ability, true);
@@ -89,6 +103,7 @@
     const generateClassPromise1 = generateClass(vorlok);
     const generateClassPromise2 = generateClass(microwave);
     const generateClassPromise3 = generateClass(alastor);
+    const generateClassPromise4 = generateClass(blightfang);
     const validateAbilityPromise = validateAbility(vorlok, ability);
     const combatPromise = combat(vorlok, microwave);
     const genBattleRoyalePromise = genBattleRoyale([
@@ -160,6 +175,18 @@
         await speechPromise;
         speechPromise = longSpeak(
           `A suitable class name for ${alastor.name} is: ${result}`
+        );
+      }
+    } catch (error) {
+      console.error("Error generating text:", error);
+    }
+    try {
+      const result: any = await generateClassPromise4;
+      console.log(result);
+      if (SPEAK) {
+        await speechPromise;
+        speechPromise = longSpeak(
+          `A suitable class name for ${blightfang.name} is: ${result}`
         );
       }
     } catch (error) {

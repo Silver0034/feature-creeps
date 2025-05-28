@@ -8,7 +8,7 @@ import { elements, validateElements } from "@utilities/elements";
 import { initLlm, listModels } from "@utilities/openai";
 import { setPlayerStatus, syncPlayerStatus } from "@utilities/players-list";
 import { promises } from "@utilities/promises"
-import { state, GameState, Role, saveGame, loadGame, type PlayerData } from "@utilities/state";
+import { state, GameState, Role, saveGame, loadGame } from "@utilities/state";
 import { tts, initTts, longSpeak } from "@utilities/tts";
 import { generateEnemy, genBattleRoyale } from "@utilities/wrapper";
 
@@ -19,9 +19,10 @@ import { messageMixin } from "@utilities/web-rtc/message";
 import { nameMixin } from "@utilities/web-rtc/name";
 import { serverMixin } from "@utilities/web-rtc/server";
 import { sheetMixin } from "@utilities/web-rtc/sheet";
+import { TimerType, timesyncMixin } from "@utilities/web-rtc/timesync";
 import { updateMixin } from "@utilities/web-rtc/update";
 
-const WebRTCServer = abilityMixin(kickMixin(messageMixin(nameMixin(serverMixin(sheetMixin(updateMixin(WebRTC)))))));
+const WebRTCServer = abilityMixin(kickMixin(messageMixin(nameMixin(serverMixin(sheetMixin(timesyncMixin(updateMixin(WebRTC))))))));
 let rtc: InstanceType<typeof WebRTCServer>;
 
 // Constants for valid options.
@@ -205,21 +206,34 @@ async function connect() {
   // Names are provided in nameMixin.
 
   // Wait for start button to be hit.
+  let isStarting = false;
   elements.host.goButton.onclick = async () => {
-    // Toss any incomplete character sheets.
-    state.players = state.players.filter(player => {
-      if (player.sheet.name === "Unknown") {
-        // Notify the player that they've been kicked, and set their client to
-        // discard all messages.
-        rtc.sendKick({ reason: "Missing name!" }, player.peerId);
-        return false;
-      }
-      return true;
-    });
-    elements.host.playerCount.textContent = state.players.length.toString();
-    syncPlayerStatus();
+    isStarting = !isStarting;
+    if (isStarting) {
+      rtc.broadcastTimer(TimerType.Name, 5, false, elements.host.timer, async () => {
+        // Toss any incomplete character sheets.
+        state.players = state.players.filter(player => {
+          if (player.sheet.name === "Unknown") {
+            // Notify the player that they've been kicked, and set their client
+            // to discard all messages.
+            rtc.sendKick({ reason: "Missing name!" }, player.peerId);
+            return false;
+          }
+          return true;
+        });
+        elements.host.playerCount.textContent = state.players.length.toString();
+        syncPlayerStatus();
 
-    await runStateLogic(GameState.Intro);
+        // Needs to be reset in case of repeat rounds.
+        elements.host.goButton.innerText = "Start Game";
+
+        await runStateLogic(GameState.Intro);
+      });
+      elements.host.goButton.innerText = "Cancel Countdown"
+    } else {
+      rtc.broadcastTimerCancel();
+      elements.host.goButton.innerText = "Start Game"
+    }
   };
 }
 
@@ -230,6 +244,9 @@ async function intro() {
     // We may prefer to change this in the future.
     rtc.sendSheet({ sheet: player.sheet.toJSON(), peerId: player.peerId });
   }
+
+  // Set up the TimeSync.
+  rtc.updatePeersList();
 
   await promises.tts;
   let explainString = "";
@@ -552,8 +569,10 @@ async function options() {
     }
   };
 
-  // TODO: Add an event listener for changing the LLM model.
-  // Update VRAM bar when you do.
+  elements.host.options.inferenceModel.onchange = async () => {
+    state.options.inference.modelName = elements.host.options.inferenceModel.value;
+    updateVramBar();
+  };
 
   elements.host.options.ttsType.onchange = async () => {
     const selectedValue = elements.host.options.ttsType.value;
@@ -565,9 +584,6 @@ async function options() {
       await updateTtsLists();
     }
   };
-
-  // TODO: Add an event listener for changing the TTS model.
-  // Update VRAM bar when you do.
 
   elements.host.options.saveConfig.onclick = async () => {
     // Save updated state.

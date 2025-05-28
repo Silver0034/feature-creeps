@@ -3,6 +3,7 @@ import { state, Role } from "@utilities/state";
 export let elements = {
   gameState: document.getElementById("gameState") as HTMLInputElement,
   host: {
+    timer: document.getElementById("timer") as HTMLElement,
     playerCount: document.getElementById("playerCount") as HTMLElement,
     enemy: document.getElementById("enemy") as HTMLInputElement,
     player: document.getElementById("player") as HTMLInputElement,
@@ -24,7 +25,7 @@ export let elements = {
       autoFullscreen: document.getElementById("autoFullscreen") as HTMLInputElement,
       numRounds: document.getElementById("numRounds") as HTMLInputElement,
       inferenceEngine: document.getElementById("inferenceEngine") as HTMLSelectElement,
-      inferenceModelRow: document.getElementById("inferenceModelRow") as HTMLSelectElement,
+      inferenceModelRow: document.getElementById("inferenceModelRow") as HTMLInputElement,
       inferenceModel: document.getElementById("inferenceModel") as HTMLSelectElement,
       temperature: document.getElementById("temperature") as HTMLInputElement,
       tempValue: document.getElementById("tempValue") as HTMLElement,
@@ -37,6 +38,7 @@ export let elements = {
     }
   },
   client: {
+    timer: document.getElementById("timer") as HTMLElement,
     name: document.getElementById("name") as HTMLElement,
     feedback: document.getElementById("feedback") as HTMLInputElement,
     roomDiv: document.getElementById("roomDiv") as HTMLInputElement,
@@ -81,16 +83,15 @@ function isDOMElement(element: unknown): element is DOMElement {
   return element instanceof HTMLElement;
 }
 
-function validate(elements: { [key: string]: unknown }) {
-  Object.values(elements).forEach((element) => {
-    if (isDOMElement(element)) {
-      // Now TypeScript knows that element is a DOMElement
-      // console.log(`${element.id}`);
-    } else if (typeof element === 'object' && element !== null) {
-      // If the element is an object, recursively validate its properties
-      validate(element as { [key: string]: unknown });
-    } else {
-      console.error(`Missing ${element}`);
+function validate(elements: { [key: string]: unknown }, path: string = '') {
+  for (const [key, value] of Object.entries(elements)) {
+    const currentPath = path ? `${path}.${key}` : key;
+    if (isDOMElement(value)) {
+      // console.log(`${value.id}`);
+    } else if (typeof value === 'object' && value !== null) {
+      validate(value as { [key: string]: unknown }, currentPath);
+    } else if (value == null) {
+      console.error(`Missing value for "${currentPath}"`);
     }
-  });
+  }
 }

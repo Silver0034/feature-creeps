@@ -1,0 +1,35 @@
+---
+
+---
+
+<script>
+  import { WebRTC } from "@utilities/web-rtc";
+  import { abilityMixin } from "@utilities/web-rtc/ability";
+  import { kickMixin } from "@utilities/web-rtc/kick";
+  import { messageMixin } from "@utilities/web-rtc/message";
+  import { nameMixin } from "@utilities/web-rtc/name";
+  import { serverMixin } from "@utilities/web-rtc/server";
+  import { sheetMixin } from "@utilities/web-rtc/sheet";
+  import { timesyncMixin } from "@utilities/web-rtc/timesync";
+  import { updateMixin } from "@utilities/web-rtc/update";
+
+  const WebRTCServer = timesyncMixin(WebRTC);
+  const rtc = new WebRTCServer("TimerTest");
+
+  const timerElement = document.getElementById("timer");
+  const TIMER_DURATION = 60;
+
+  function step() {
+    const timestamp = rtc.now() / 1000;
+    const timeLeft =
+      TIMER_DURATION - 1 - (Math.round(timestamp) % TIMER_DURATION);
+    if (timerElement) {
+      timerElement.innerText = timeLeft.toString();
+    }
+    const timeCorrection = Math.round(timestamp) - timestamp;
+    setTimeout(step, timeCorrection * 1000 + 1000);
+  }
+  step();
+</script>
+
+<p><span id="timer"></span> seconds</p>
