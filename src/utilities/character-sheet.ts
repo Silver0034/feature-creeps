@@ -63,10 +63,16 @@ ${weaknessesStr}`
 			};
 		} else {
 			return {
+				// TODO: Test these new fields on the non-OpenAI engines too.
+				type: 'object',
+				additionalProperties: false,
 				properties: {
 					name: { type: 'string' },
 					className: { type: 'string' },
-					level: { const: level },
+					level: {
+						type: 'number',
+						const: level
+					},
 					strengths: {
 						type: 'array',
 						items: { type: 'string' },

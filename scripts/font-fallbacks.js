@@ -3,7 +3,7 @@ import path from 'path'
 import { createFontStack } from '@capsizecss/core'
 import arial from '@capsizecss/metrics/arial'
 import roboto from '@capsizecss/metrics/roboto'
-import { fromFile } from '@capsizecss/unpack'
+import { fromFile } from '@capsizecss/unpack/fs'
 
 const fonts = {
 	'Alegreya': './node_modules/@fontsource/alegreya/files/alegreya-cyrillic-700-normal.woff',

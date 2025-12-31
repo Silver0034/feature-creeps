@@ -207,6 +207,11 @@ export async function roundAbilities() {
 }
 
 export async function roundBattle() {
+  // Set these in case the host submitted an ability for us.
+  elements.client.feedback.innerText = "";
+  elements.client.abilityInput.value = "";
+  elements.client.abilityDiv.style.display = "none";
+
   updateStateElement();
 }
 

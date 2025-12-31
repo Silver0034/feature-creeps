@@ -46,7 +46,26 @@ export async function isStrength(
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: 0,
-    response_format: formatResponse({ "type": "object", "properties": { "Rationale": { "type": "string" }, "Decision": { "type": "string", "enum": ["Strength", "Weakness"] } }, "required": ["Rationale", "Decision"] }),
+    response_format: formatResponse({
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Rationale": {
+          "type": "string"
+        },
+        "Decision": {
+          "type": "string",
+          "enum": [
+            "Strength",
+            "Weakness"
+          ]
+        }
+      },
+      "required": [
+        "Rationale",
+        "Decision"
+      ]
+    }),
     stop: "<|end|>",
     messages: [
       {
@@ -98,7 +117,14 @@ export async function balanceAbility(
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: 0,
-    response_format: formatResponse({ "type": "object", "properties": { "Strength": { "type": "string" }, "Weakness": { "type": "string" } }, "required": [isStrength ? "Weakness" : "Strength"] }),
+    response_format: formatResponse({
+      type: "object",
+      additionalProperties: false,
+      properties: isStrength
+        ? { Weakness: { type: "string" } }
+        : { Strength: { type: "string" } },
+      required: [isStrength ? "Weakness" : "Strength"]
+    }),
     stop: "<|end|>",
     messages: [
       {
@@ -182,7 +208,18 @@ ${character.toString()}`,
 export async function fallbackAbility(character: CharacterSheet): Promise<string> {
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
-    response_format: formatResponse({ "type": "object", "properties": { "Strength": { "type": "string" } }, "required": ["Strength"] }),
+    response_format: formatResponse({
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "Strength": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "Strength"
+      ]
+    }),
     stop: "<|end|>",
     messages: [
       {
@@ -209,7 +246,18 @@ export async function generateClass(character: CharacterSheet): Promise<string> 
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: 0,
-    response_format: formatResponse({ "type": "object", "properties": { "new_className": { "type": "string" } }, "required": ["new_className"] }),
+    response_format: formatResponse({
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "new_className": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "new_className"
+      ]
+    }),
     stop: "<|end|>",
     messages: [
       {
@@ -235,7 +283,26 @@ export async function validateAbility(
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: 0,
-    response_format: formatResponse({ "type": "object", "properties": { "reasoning": { "type": "string" }, "conflict": { "type": "string", "enum": ["Yes", "No"] } }, "required": ["reasoning", "conflict"] }),
+    response_format: formatResponse({
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reasoning": {
+          "type": "string"
+        },
+        "conflict": {
+          "type": "string",
+          "enum": [
+            "Yes",
+            "No"
+          ]
+        }
+      },
+      "required": [
+        "reasoning",
+        "conflict"
+      ]
+    }),
     stop: "<|end|>",
     messages: [
       {
@@ -270,7 +337,23 @@ export async function combat(
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: state.options.inference.temperature,
-    response_format: formatResponse({ "type": "object", "properties": { "fight_description": { "type": "string" }, "winner": { "type": "string", "enum": [c1.name, c2.name] } }, "required": ["fight_description", "winner"] }),
+    response_format: formatResponse({
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fight_description": {
+          "type": "string"
+        },
+        "winner": {
+          "type": "string",
+          "enum": [c1.name, c2.name]
+        }
+      },
+      "required": [
+        "fight_description",
+        "winner"
+      ]
+    }),
     stop: "<|end|>",
     messages: [
       {
@@ -361,7 +444,20 @@ export async function genBattleRoyale(players: CharacterSheet[]): Promise<[Chara
   const reply = await client.chat.completions.create({
     model: state.options.inference.modelName,
     temperature: state.options.inference.temperature,
-    response_format: formatResponse({ "type": "object", "properties": { "battle_description": { "type": "string" }, "winner": { "type": "string", "enum": players.map(player => player.name) } }, "required": ["battle_description", "winner"] }),
+    response_format: formatResponse({
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "battle_description": {
+          "type": "string"
+        },
+        "winner": {
+          "type": "string",
+          "enum": players.map(player => player.name)
+        }
+      },
+      "required": ["battle_description", "winner"]
+    }),
     stop: "<|end|>",
     messages: [
       {

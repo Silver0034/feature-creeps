@@ -25,6 +25,7 @@ export let elements = {
       autoFullscreen: document.getElementById("autoFullscreen") as HTMLInputElement,
       numRounds: document.getElementById("numRounds") as HTMLInputElement,
       inferenceEngine: document.getElementById("inferenceEngine") as HTMLSelectElement,
+      listModelsButton: document.getElementById("listModelsButton") as HTMLElement,
       inferenceModelRow: document.getElementById("inferenceModelRow") as HTMLInputElement,
       inferenceModel: document.getElementById("inferenceModel") as HTMLSelectElement,
       temperature: document.getElementById("temperature") as HTMLInputElement,

@@ -288,8 +288,36 @@ async function roundAbilities() {
     setPlayerStatus(player, "Entering an ability.");
   }
 
-  // Request new abilities from players.
-  await Promise.all(promises.players);
+  // Create a promise that will be resolved when the timer ends
+  let timeoutResolved = false;
+  const timeoutPromise = new Promise<void>(resolve => {
+    // TODO: Figure out why clients get sent NaN time.
+    rtc.broadcastTimer(TimerType.Ability, 120, false, elements.host.timer, () => {
+      if (promises.playersResolve.size > 0) {
+        console.warn("Timer expired. Auto-resolving pending players.");
+      }
+      // TODO: Seems to trigger for everyone, and it seems you cannot sent RTC messages to one's self.
+      for (const [peerId, resolver] of promises.playersResolve.entries()) {
+        rtc.sendAbility({ ability: "", useFallback: true, peerId: peerId }, selfId);
+      }
+      timeoutResolved = true;
+      resolve();
+    });
+  });
+
+  // Wait for either all players to respond or the timer to complete.
+  // TODO: Do not penalize players just because the LLM is slow. Right now,
+  // incomplete prompt checks will cause the fallback to trigger too.
+  await Promise.race([
+    Promise.all(promises.players),
+    timeoutPromise
+  ]);
+
+  // Optional: if some players were late, you may want to cancel the timer.
+  if (!timeoutResolved) {
+    // TODO: Cancel broadcast timer?
+    elements.host.timer.innerText = "All players responded.";
+  }
 
   if (state.round == state.options.numRounds) {
     // We can start generating the final battle now.
@@ -440,34 +468,40 @@ async function options() {
     if (state.options.inference.engine === "local") {
       elements.host.options.inferenceModelRow.style.display = "block";
       elements.host.options.inferenceApiRow.style.display = "none";
-
-      models = await listModels();
-      const modelStrings = models.map((model): [string, string] => {
-        const vram = model.vram_required_MB;
-        const formattedVram = vram ?
-          (vram >= 1024 ?
-            `\t(${(vram / 1024).toFixed(1)}GB VRAM)` :
-            `\t(${Math.floor(vram)}MB VRAM)`) :
-          ("");
-        return [model.model_id,
-        `${model.model_id.replaceAll("-", " ")}${formattedVram}`];
-      });
-
-      populateDropdownPairs(elements.host.options.inferenceModel, modelStrings, state.options.inference.modelName || "Choose an LLM engine first.");
-
     } else if (state.options.inference.engine === "API") {
+      elements.host.options.inferenceModelRow.style.display = "block";
       elements.host.options.inferenceApiRow.style.display = "block";
+    }
 
-      models = await listModels();
-      if (models && models.length > 0) {
-        elements.host.options.inferenceModelRow.style.display = "block";
-        populateDropdownPairs(elements.host.options.inferenceModel,
-          models.map(model => model.id),
-          state.options.inference.modelName || "Choose an LLM engine first.");
-      } else {
-        elements.host.options.inferenceModelRow.style.display = "none";
+    async function updateLlmModelsList() {
+      if (state.options.inference.engine === "local") {
+        models = await listModels();
+        const modelStrings = models.map((model): [string, string] => {
+          const vram = model.vram_required_MB;
+          const formattedVram = vram ?
+            (vram >= 1024 ?
+              `\t(${(vram / 1024).toFixed(1)}GB VRAM)` :
+              `\t(${Math.floor(vram)}MB VRAM)`) :
+            ("");
+          return [model.model_id,
+          `${model.model_id.replaceAll("-", " ")}${formattedVram}`];
+        });
+
+        populateDropdownPairs(elements.host.options.inferenceModel, modelStrings, state.options.inference.modelName || "Choose an LLM engine first.");
+      } else if (state.options.inference.engine === "API") {
+        models = await listModels();
+        if (models && models.length > 0) {
+          elements.host.options.inferenceModelRow.style.display = "block";
+          populateDropdownPairs(elements.host.options.inferenceModel,
+            models.map((model): [string, string] => [model.id, model.id]),
+            state.options.inference.modelName || "Choose an LLM engine first.");
+        }
       }
     }
+
+    elements.host.options.listModelsButton.onclick = updateLlmModelsList
+
+    updateLlmModelsList()
   }
 
   async function updateTtsLists() {
@@ -595,13 +629,16 @@ async function options() {
     }
 
     // Reload LLM if these changed.
-    let reloadLlm = false;
-    if (state.options.inference.engine !== elements.host.options.inferenceEngine.value ||
-      state.options.inference.modelName !== elements.host.options.inferenceModel.value ||
-      state.options.inference.apiURL !== elements.host.options.inferenceApiUrl.value ||
-      state.options.inference.apiKey !== elements.host.options.inferenceApiKey.value) {
-      reloadLlm = true;
-    }
+    // TODO: Since these settings are changed before saving, we cannot know if a
+    // reload is needed. To err on the safe side, we always reload the LLM.
+    let reloadLlm = true;
+    // let reloadLlm = false;
+    // if (state.options.inference.engine !== elements.host.options.inferenceEngine.value ||
+    //   state.options.inference.modelName !== elements.host.options.inferenceModel.value ||
+    //   state.options.inference.apiURL !== elements.host.options.inferenceApiUrl.value ||
+    //   state.options.inference.apiKey !== elements.host.options.inferenceApiKey.value) {
+    //   reloadLlm = true;
+    // }
     state.options.inference.engine = elements.host.options.inferenceEngine.value;
     state.options.inference.modelName = elements.host.options.inferenceModel.value;
     const parsedTemperature = parseFloat(elements.host.options.temperature.value);
@@ -615,6 +652,8 @@ async function options() {
     }
 
     // Reload TTS if these changed.
+    // NOTE: state.options.tts.type is updated within the settings and should
+    // reload the TTS engine on its own already.
     let reloadTts = false;
     if (state.options.tts.type !== elements.host.options.ttsType.value ||
       state.options.tts.voice !== elements.host.options.ttsVoice.value) {

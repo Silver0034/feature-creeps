@@ -1,4 +1,5 @@
 import { create, type TimeSync } from 'timesync';
+import { selfId } from "trystero/mqtt";
 import { Role, state } from '@utilities/state';
 import { Timer } from '@utilities/timer';
 import { WebRTC } from '@utilities/web-rtc';
@@ -21,7 +22,7 @@ export function timesyncMixin<TBase extends new (...args: any[]) => WebRTC>(Base
     constructor(...args: any[]) {
       super(...args);
       this.ts = create({ peers: [], interval: 10000 });
-      console.log(`Created TimeSync.`);
+      // console.log(`Created TimeSync.`);
       this.registerTimesyncActions();
     }
     private registerTimesyncActions(): void {
@@ -31,7 +32,12 @@ export function timesyncMixin<TBase extends new (...args: any[]) => WebRTC>(Base
       this.ts.send = (to: string, data: object, _: number): Promise<void> => {
         return new Promise((resolve, reject) => {
           try {
-            console.log(`Sending TimeSync to ${to}: ${data}`);
+            // Ignore synchronization with yourself.
+            // Otherwise throws errors in the console.
+            if(to === selfId) {
+              resolve();
+            }
+            // console.log(`Sending TimeSync to ${to}: ${data}`);
             this.sendTimesync(data, to);
             resolve();
           } catch (error) {
@@ -40,13 +46,14 @@ export function timesyncMixin<TBase extends new (...args: any[]) => WebRTC>(Base
         });
       };
       getTimesync((data, peerId) => {
-        console.log(`Got TimeSync from ${peerId}: ${data}`);
+        // console.log(`Got TimeSync from ${peerId}: ${data}`);
         if (peerId === state.hostId) {
           this.ts.receive(peerId, data);
         }
       });
       const [sendTimer, getTimer] = this.room.makeAction<TimerData>("timer");
       this.sendTimer = sendTimer;
+      // TODO: Why does this report NaN on clients during the ability timer?
       getTimer(async (data, peerId) => {
         try {
           if (!this.isTimerData(data)) {
@@ -90,7 +97,7 @@ export function timesyncMixin<TBase extends new (...args: any[]) => WebRTC>(Base
       }
       this.ts = create({ peers: peers, interval: 10000 });
       this.registerTimesyncActions();
-      console.log(`Updated TimeSync.`);
+      // console.log(`Updated TimeSync.`);
     }
     public now(): number {
       return this.ts.now();

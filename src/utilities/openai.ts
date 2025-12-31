@@ -30,18 +30,10 @@ async function queryGPUFeatures(): Promise<{ isF16Supported: boolean; maxStorage
 }
 
 export async function listModels(): Promise<any[]> {
-  if (state.options.inference.engine != "local") {
-    return [];
+  if (state.options.inference.engine === "API") {
+    await initLlm({ reload: true });
+    return (await (client as OpenAI).models.list()).data;
   }
-  // TODO: If we want to support this, we have to improve our error handling and
-  // make sure this happens in the proper order of operations.
-  // if (state.options.inference.engine != "local") {
-  //   if (!state.options.inference.apiURL || !state.options.inference.apiKey) {
-  //     return [];
-  //   }
-  //   await initLlm({ reload: false });
-  //   return (await (client as OpenAI).models.list()).data;
-  // }
 
   const { isF16Supported, maxStorageBufferBindingSize } = await queryGPUFeatures();
   const suffix = isF16Supported ? "f16" : "f32";
@@ -150,7 +142,7 @@ export function formatResponse(schema: any): any {
   const legacy = false;
   if (legacy) {
     // NOTE: KoboldCpp supports either approach, but the old format seems to be
-    // more reliable.
+    // more reliable for it.
     response_format.type = 'json_object';
     response_format.schema = schema;
     return response_format;

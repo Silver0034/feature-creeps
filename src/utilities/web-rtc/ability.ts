@@ -7,7 +7,7 @@ import { GameState, Role, state } from "@utilities/state";
 import { WebRTC } from "@utilities/web-rtc";
 import { validateAbility, fallbackAbility, balanceAbility, generateClass, combat } from "@utilities/wrapper";
 
-type AbilityData = { ability: string, useFallback: boolean };
+type AbilityData = { ability: string, useFallback: boolean, peerId?: string };
 type AbilityFBData = { isValid: boolean, feedback: string };
 
 export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base: TBase) {
@@ -33,6 +33,10 @@ export function abilityMixin<TBase extends new (...args: any[]) => WebRTC>(Base:
           }
           if (state.gameState != GameState.RoundAbilities) {
             throw new Error(`Ignoring ability sent by ${peerId} while in the ${GameState[state.gameState]} state: ${data}`);
+          }
+          // The server is allowed to impersonate peers.
+          if (peerId === state.hostId && data.peerId) {
+            peerId = data.peerId;
           }
           // Each peerId gets their own lock.
           // This ensures that double-submissions can be checked for duplicates one at a time.
